@@ -23,7 +23,9 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 16px; }
+/* html 에 scroll-padding 을 두지 않는다. API 참조(Redoc)는 구역 위쪽이 화면 맨 위에 닿았는지로 현재 구역을 정하는데,
+   여백만큼 덜 내려가면 누른 구역 대신 바로 앞 구역을 현재로 잡는다. 안내서 제목의 여백은 아래 scroll-margin-top 으로 준다. */
+html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
@@ -85,6 +87,7 @@ p, li { text-wrap: pretty; }
 .doc h1 { font-size: 30px; margin: 8px 0 16px; }
 .doc h2 { font-size: 23px; margin: 56px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
 .doc h3 { font-size: 18px; margin: 36px 0 12px; }
+.doc h1, .doc h2, .doc h3 { scroll-margin-top: 16px; } /* 목차에서 눌러 왔을 때 제목이 화면 맨 위에 붙지 않게 */
 .doc p { margin: 12px 0; }
 .doc ul, .doc ol { margin: 12px 0; padding-left: 22px; }
 .doc li { margin: 6px 0; }

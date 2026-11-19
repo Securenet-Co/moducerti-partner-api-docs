@@ -16,12 +16,20 @@ const CSP_GUIDE = "default-src 'none'; style-src 'self'; img-src 'self' data:; b
 // Redoc 은 화면을 그리며 style 태그를 만들고 검색용 작업 스레드를 blob 으로 띄운다. 밖으로 나가는 요청은 모두 막는다.
 const CSP_API = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; worker-src blob:; child-src blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
 
+// OpenAPI 파일을 브라우저에서 바로 열면, 정적 호스팅이 글자 설정(charset) 없이 내려 줘서 한글이 깨져 보일 수 있다.
+// 그래서 링크를 둘로 나눈다: 내려받기(같은 저장소의 파일)와, 글자 설정을 붙여 주는 주소에서 보기.
+// 문서를 다른 곳으로 옮기면 이 주소 하나만 고친다.
+const OPENAPI_VIEW_URL = "https://raw.githubusercontent.com/Securenet-Co/moducerti-partner-api-docs/main/docs/openapi.yaml";
+const openapiLinks = (prefix) =>
+  `<a href="${prefix}docs/openapi.yaml" download="openapi.yaml">OpenAPI 파일 받기</a>
+    <a href="${OPENAPI_VIEW_URL}" rel="noopener noreferrer">OpenAPI 파일 보기</a>`;
+
 const topBar = (prefix, current) => `<header class="top">
   <a class="brand" href="${prefix}index.html">${TITLE}</a>
   <nav class="top-nav" aria-label="문서">
     <a href="${prefix}index.html"${current === "guide" ? ' aria-current="page"' : ""}>안내서</a>
     <a href="${prefix}api/index.html"${current === "api" ? ' aria-current="page"' : ""}>API 참조</a>
-    <a href="${prefix}docs/openapi.yaml">OpenAPI 파일</a>
+    ${openapiLinks(prefix)}
   </nav>
 </header>`;
 
@@ -98,7 +106,7 @@ write("api/index.html", `<!doctype html>
 </head>
 <body class="api-page">
 ${topBar("../", "api")}
-<noscript><p class="notice">이 페이지는 스크립트가 켜져 있어야 보입니다. 같은 내용은 <a href="../index.html">안내서</a>와 <a href="../docs/openapi.yaml">OpenAPI 파일</a>에 있습니다.</p></noscript>
+<noscript><p class="notice">이 페이지는 스크립트가 켜져 있어야 보입니다. 같은 내용은 <a href="../index.html">안내서</a>와 OpenAPI 파일(<a href="../docs/openapi.yaml" download="openapi.yaml">받기</a>, <a href="${OPENAPI_VIEW_URL}" rel="noopener noreferrer">보기</a>)에 있습니다.</p></noscript>
 <div id="redoc"></div>
 <script type="application/json" id="openapi-spec">${specJson}</script>
 <script src="../vendor/redoc/redoc.standalone.js"></script>
