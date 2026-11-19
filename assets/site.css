@@ -1,0 +1,163 @@
+/* 모두의인증 연동 API 문서 — 바깥 글꼴·그림 없이 이 파일 하나로 그린다. */
+:root {
+  --bg: #ffffff;
+  --surface: #f6f8fa;
+  --text: #1f2328;
+  --muted: #59636e;
+  --line: #d1d9e0;
+  --link: #0b57d0;
+  --code-bg: #eff2f5;
+  --sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1419;
+    --surface: #171c23;
+    --text: #e3e8ee;
+    --muted: #9aa5b1;
+    --line: #2d343d;
+    --link: #8ab4f8;
+    --code-bg: #1f262f;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 16px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.7;
+  word-break: keep-all;      /* 한국어 단어 중간에서 끊지 않는다 */
+  overflow-wrap: break-word; /* 긴 영문·주소가 넘칠 때만 끊는다 */
+}
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+h1, h2, h3, h4 { text-wrap: balance; line-height: 1.35; }
+p, li { text-wrap: pretty; }
+
+/* 맨 위 줄 */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 24px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.brand { font-weight: 700; color: var(--text); text-decoration: none; }
+.top-nav { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 15px; }
+.top-nav a { color: var(--muted); text-decoration: none; white-space: nowrap; }
+.top-nav a:hover { color: var(--text); text-decoration: underline; }
+.top-nav a[aria-current="page"] { color: var(--text); font-weight: 600; }
+
+/* 안내서 */
+.layout {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  gap: 48px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 24px 96px;
+}
+.toc {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 16px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.toc-title { margin: 0 0 8px; font-weight: 700; color: var(--muted); }
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc li { margin: 0; }
+.toc a { display: block; padding: 4px 0; color: var(--muted); text-decoration: none; }
+.toc a:hover { color: var(--text); text-decoration: underline; }
+.toc-l2 a { color: var(--text); font-weight: 600; margin-top: 8px; }
+.toc-l3 a { padding-left: 14px; }
+
+.doc { min-width: 0; max-width: 880px; }
+.doc h1 { font-size: 30px; margin: 8px 0 16px; }
+.doc h2 { font-size: 23px; margin: 56px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.doc h3 { font-size: 18px; margin: 36px 0 12px; }
+.doc p { margin: 12px 0; }
+.doc ul, .doc ol { margin: 12px 0; padding-left: 22px; }
+.doc li { margin: 6px 0; }
+.doc blockquote {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.doc blockquote p { margin: 4px 0; }
+
+.doc code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--code-bg);
+  overflow-wrap: anywhere;
+}
+.doc pre {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow-x: auto;
+  line-height: 1.55;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.doc pre code { padding: 0; background: none; font-size: 13.5px; overflow-wrap: normal; white-space: pre; }
+
+.table-wrap { margin: 16px 0; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.doc table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.6; }
+.doc th, .doc td { padding: 9px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.doc tr:last-child td { border-bottom: 0; }
+.doc th { background: var(--surface); font-weight: 600; white-space: nowrap; }
+.doc td:first-child { min-width: 96px; }
+
+.notice { max-width: 880px; margin: 24px auto; padding: 0 24px; }
+
+/* API 참조: Redoc 이 밝은 바탕으로 그리므로 바깥도 밝게 둔다 */
+.api-page { background: #ffffff; color: #1f2328; }
+.api-page .top { background: #f6f8fa; border-bottom-color: #d1d9e0; }
+.api-page .brand, .api-page .top-nav a[aria-current="page"] { color: #1f2328; }
+.api-page .top-nav a { color: #59636e; }
+
+/* 설명 칸의 긴 영문·경로(#/components/schemas/… 등)가 칸 밖으로 나가 오른쪽 예시 칸에 가려지지 않게 줄을 바꾼다 */
+.api-page #redoc { overflow-wrap: anywhere; }
+
+/* 좁은 화면 */
+@media (max-width: 900px) {
+  .layout { display: block; padding: 16px 16px 72px; }
+  .toc {
+    position: static;
+    max-height: none;
+    margin: 0 0 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .toc-l3 { display: none; }
+  .toc-l2 a { margin-top: 0; font-weight: 500; }
+  .top { padding: 10px 16px; }
+  .doc h1 { font-size: 25px; margin-top: 28px; }
+  .doc h2 { font-size: 21px; margin-top: 44px; }
+  .doc table { min-width: 560px; }
+}
+
+@media print {
+  .toc, .top-nav { display: none; }
+  .layout { display: block; padding: 0; }
+  .table-wrap { overflow: visible; }
+}

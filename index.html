@@ -1,0 +1,1183 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>모두의인증 연동 API 문서</title>
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html">모두의인증 연동 API 문서</a>
+  <nav class="top-nav" aria-label="문서">
+    <a href="index.html" aria-current="page">안내서</a>
+    <a href="api/index.html">API 참조</a>
+    <a href="docs/openapi.yaml">OpenAPI 파일</a>
+  </nav>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="목차">
+    <p class="toc-title">목차</p>
+    <ul>
+        <li class="toc-l2"><a href="#s1">1. 개요</a></li>
+        <li class="toc-l2"><a href="#s2">2. 인증·공통 규칙·호출 한도</a></li>
+        <li class="toc-l3"><a href="#s2-1">2-1. 인증 (API 키)</a></li>
+        <li class="toc-l3"><a href="#s2-2">2-2. 공통 규칙</a></li>
+        <li class="toc-l3"><a href="#s2-3">2-3. 호출 한도 (키마다, 기본값)</a></li>
+        <li class="toc-l3"><a href="#s2-4">2-4. 기능마다 다른 점</a></li>
+        <li class="toc-l2"><a href="#s3">3. 회원·업체 등록</a></li>
+        <li class="toc-l3"><a href="#s3-x1">회원·업체 등록 — POST /partner/v1/members</a></li>
+        <li class="toc-l3"><a href="#s3-1">3-1. 요청 모양</a></li>
+        <li class="toc-l3"><a href="#s3-2">3-2. data JSON 칸</a></li>
+        <li class="toc-l3"><a href="#s3-3">3-3. 응답 (200)</a></li>
+        <li class="toc-l3"><a href="#s3-4">3-4. 상태 두 가지</a></li>
+        <li class="toc-l3"><a href="#s3-5">3-5. 같은 등록을 다시 보내면</a></li>
+        <li class="toc-l3"><a href="#s3-6">3-6. 회원·업체는 이렇게 처리됩니다</a></li>
+        <li class="toc-l3"><a href="#s3-7">3-7. 등록 확인 — GET /partner/v1/members/{memberId}</a></li>
+        <li class="toc-l3"><a href="#s3-8">3-8. 요청 예시</a></li>
+        <li class="toc-l2"><a href="#s4">4. 인증 신청 — POST /partner/v1/applications</a></li>
+        <li class="toc-l3"><a href="#s4-1">4-1. 요청 모양</a></li>
+        <li class="toc-l3"><a href="#s4-2">4-2. data JSON 칸</a></li>
+        <li class="toc-l3"><a href="#s4-3">4-3. 응답 (200)</a></li>
+        <li class="toc-l3"><a href="#s4-4">4-4. 같은 externalOrderId로 다시 보내면</a></li>
+        <li class="toc-l3"><a href="#s4-5">4-5. 신청을 접수하지 못하는 경우</a></li>
+        <li class="toc-l3"><a href="#s4-6">4-6. 요청 예시</a></li>
+        <li class="toc-l2"><a href="#s5">5. 신청 조회</a></li>
+        <li class="toc-l3"><a href="#s5-1">5-1. 건별 — GET /partner/v1/applications/{applicationId}</a></li>
+        <li class="toc-l3"><a href="#s5-2">5-2. 묶음 — GET /partner/v1/applications?ids=… 또는 ?externalOrderIds=…</a></li>
+        <li class="toc-l3"><a href="#s5-3">5-3. 전체 재대조 목록 — GET /partner/v1/applications</a></li>
+        <li class="toc-l3"><a href="#s5-4">5-4. 상태 5종</a></li>
+        <li class="toc-l3"><a href="#s5-5">5-5. 요청 예시</a></li>
+        <li class="toc-l2"><a href="#s6">6. 준비 중인 기능</a></li>
+        <li class="toc-l2"><a href="#s7">7. 오류</a></li>
+        <li class="toc-l3"><a href="#s7-1">7-1. 오류 모양</a></li>
+        <li class="toc-l3"><a href="#s7-2">7-2. 오류 코드</a></li>
+        <li class="toc-l3"><a href="#s7-3">7-3. 입력 오류(400 VALIDATION_FAILED)의 fieldErrors</a></li>
+        <li class="toc-l3"><a href="#s7-4">7-4. 오류가 겹칠 때 어느 것이 먼저인가 (인증 신청)</a></li>
+        <li class="toc-l2"><a href="#s8">8. 변경 이력</a></li>
+    </ul>
+  </nav>
+  <main class="doc">
+<h1 id="top">모두의인증 연동 API 문서</h1>
+<blockquote>
+<p><strong>제1판 · 2026-11-19</strong>
+연동사 서비스에서 모두의인증으로 회원·업체를 등록하고, 인증 신청을 보내고, 진행 상태를 조회하는 API 규격입니다.
+같은 판의 OpenAPI 파일(<code>openapi.yaml</code>)과 내용이 같습니다. 판마다 달라진 점은 맨 아래 8절 변경 이력에 있습니다.</p>
+</blockquote>
+<h2 id="s1">1. 개요</h2>
+<p>연동사에서 모두의인증으로 보내는 것은 <strong>API</strong>로, 모두의인증에서 연동사로 알려 드리는 것은 <strong>웹훅</strong>으로 합니다.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>순서</th>
+<th>하는 일</th>
+<th>API (연동사 → 모두의인증)</th>
+<th>웹훅 (모두의인증 → 연동사)</th>
+<th>이 문서</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>회원·업체 등록</td>
+<td>회원·업체 등록(회원·업체 한 쌍에 <strong>한 번</strong>), 등록 확인</td>
+<td>—</td>
+<td>3절</td>
+</tr>
+<tr>
+<td>2</td>
+<td>인증 신청</td>
+<td>인증 신청(사진·제품 정보, 등록 때 받은 <code>memberId</code>를 실음) — 업체마다 <strong>여러 번</strong></td>
+<td>—</td>
+<td>4절</td>
+</tr>
+<tr>
+<td>3</td>
+<td>진행 및 완료</td>
+<td>신청 조회(건별·묶음·하루 1회 재대조용 목록), 발급 문서(인증서 등) 내려받기</td>
+<td>상태가 바뀌면 알림(주 경로). 알림을 놓쳤을 때 조회로 맞춥니다</td>
+<td>신청 조회는 5절. 발급 문서 내려받기·웹훅은 준비 중(6절)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>정산</td>
+<td>정산 내역 조회</td>
+<td>—</td>
+<td>준비 중(6절)</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>회원·업체 등록은 한 번이고, 그 뒤 같은 회원·업체로 인증 신청을 여러 번 보냅니다. 신청 1건이 모두의인증의 인증 접수 1건입니다.</li>
+<li>신청 상태가 바뀌면 웹훅으로 알려 드리고, 알림을 받으면 조회 API로 최신 내용을 확인하는 방식입니다. 웹훅이 열리기 전까지 신청의 진행 상태는 조회 API(5절)로 확인해 주세요.</li>
+<li>이 문서에서 <strong>연동사</strong>는 이 API로 모두의인증과 연결하는 곳이고, <strong>연동 서비스</strong>는 API 키가 묶이는 단위(연동사의 서비스 하나)입니다.</li>
+</ul>
+<h2 id="s2">2. 인증·공통 규칙·호출 한도</h2>
+<h3 id="s2-1">2-1. 인증 (API 키)</h3>
+<ul>
+<li>모든 요청에 <code>x-api-key</code> 머리글로 API 키를 보냅니다. 다른 방식(예: <code>Authorization: Bearer</code>)은 받지 않습니다.</li>
+<li>API 키는 모두의인증이 발급해 드립니다(연동사마다 따로 전달). 한 키는 한 연동 서비스에 묶여 있고, 그 연동 서비스가 등록한 것만 조회할 수 있습니다.</li>
+<li>회원·업체 등록, 등록 확인, 인증 신청, 신청 조회에 같은 키를 씁니다.</li>
+<li>키가 없거나 잘못됐거나 폐기된 경우에는 보통 <code>401</code>입니다. 키가 없는 요청은 본문(파일)을 읽기 전에 거절하며, 인증 시도 한도를 넘으면 <code>429</code>, 한도를 확인할 수 없으면 <code>503</code>, 파트너 API가 꺼진 환경에서는 <code>404</code>가 먼저 올 수 있습니다.</li>
+</ul>
+<h3 id="s2-2">2-2. 공통 규칙</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>경로</td>
+<td>모든 요청은 <code>/partner/v1/</code> 아래입니다</td>
+</tr>
+<tr>
+<td>주소</td>
+<td>시험 환경 주소는 API 키와 함께 안내해 드립니다. 이 문서의 요청 예시는 안내받은 주소를 환경 변수 <code>MODUCERTI_API_BASE</code>에, 발급받은 키를 환경 변수 <code>MODUCERTI_PARTNER_KEY</code>에 넣어 두었다고 가정합니다(주소 모양 예: <code>https://partner-api.example.com</code> — 자리 값)</td>
+</tr>
+<tr>
+<td>응답 형식</td>
+<td>JSON(UTF-8). 성공 응답 본문 맨 위에 <code>&quot;statusCode&quot;: 200</code>이 붙습니다</td>
+</tr>
+<tr>
+<td>응답의 시각</td>
+<td>ISO 8601 UTC 문자열(예: <code>2026-11-19T03:15:00.000Z</code>)</td>
+</tr>
+<tr>
+<td>시각 입력 형식</td>
+<td><code>YYYY-MM-DDTHH:mm:ss</code> + (선택) 소수초 1~9자리 + <strong><code>Z</code> 또는 <code>±HH:mm</code></strong> (예: <code>2026-11-19T06:30:00Z</code>, <code>2026-11-19T15:30:00+09:00</code>). 맞지 않으면 그 칸·쿼리의 <code>FORMAT</code> 오류입니다. 달력에 없는 날짜·시각과 연도 범위(1900~2200)를 검사하는지는 칸마다 다릅니다(2-4)</td>
+</tr>
+<tr>
+<td><code>data</code>의 문자열</td>
+<td>앞뒤 공백(전각·폭 없는 공백 포함)은 지운 뒤 검사합니다. 필수 칸이 공백뿐이면 <code>REQUIRED</code>, NUL 문자(<code>\u0000</code>)가 있으면 <code>FORMAT</code> 오류입니다. 선택 칸은 공백뿐이거나 <code>null</code>이면 보내지 않은 것으로 봅니다. 사업자등록번호만은 이 규칙 대신 따로 정리합니다(3-2)</td>
+</tr>
+<tr>
+<td>정의되지 않은 칸</td>
+<td><code>data</code> JSON 안에 우리가 정의하지 않은 칸을 보내면 오류 없이 무시합니다</td>
+</tr>
+<tr>
+<td>칸 추가</td>
+<td>v1에서는 응답에 선택 칸이 추가될 수 있습니다. 모르는 칸은 무시하도록 만들어 주세요</td>
+</tr>
+<tr>
+<td>시험용 데이터</td>
+<td>시험 환경에서는 실제 고객 정보·제품 사진 대신 시험용 이름·이메일·사업자등록번호·주소·사업자등록증·사진·제품명을 써 주세요. 시험 환경의 데이터는 예고 없이 지워질 수 있습니다</td>
+</tr>
+</tbody></table></div>
+<h3 id="s2-3">2-3. 호출 한도 (키마다, 기본값)</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>한도</th>
+<th>기본값</th>
+<th>넘었을 때</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>분당</td>
+<td>60회</td>
+<td><code>429</code> <code>OPEN_API_RATE_LIMIT_EXCEEDED</code>, <code>Retry-After</code>(초) 머리글이 붙습니다</td>
+</tr>
+<tr>
+<td>하루</td>
+<td>10,000회</td>
+<td><code>429</code> <code>OPEN_API_DAILY_QUOTA_EXCEEDED</code>. 하루는 한국 시간(KST) 0시 기준입니다</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>필요한 호출량이 더 크면 알려 주세요. 키별로 조정할 수 있습니다.</li>
+<li>회원·업체 등록, 등록 확인, 인증 신청, 신청 조회 호출을 합산해 셉니다.</li>
+<li>요청이 오류(<code>400</code> 등)로 끝나도 호출 횟수에 들어갑니다. 키 없는 요청은 인증 시도 한도로 따로 셉니다.</li>
+<li>키를 보내지 않았거나 잘못된 키로 짧은 시간에 반복 요청하면 <code>401</code> 대신 <code>429</code> <code>OPEN_API_AUTH_ATTEMPTS_EXCEEDED</code>가 나올 수 있습니다(<code>Retry-After</code> 있음).</li>
+</ul>
+<h3 id="s2-4">2-4. 기능마다 다른 점</h3>
+<p>위 규칙은 모든 기능에 공통입니다. 아래는 기능마다 다른 부분만 모은 표이고, 자세한 규칙은 각 절에 있습니다.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>항목</th>
+<th>회원·업체 등록 (3절)</th>
+<th>인증 신청 (4절)</th>
+<th>신청 조회 (5절)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>요청 모양</td>
+<td><code>multipart/form-data</code> — <code>data</code> + 사업자등록증 파일(선택, 1개)</td>
+<td><code>multipart/form-data</code> — <code>data</code> + 사진(필수, 1~5장)</td>
+<td>GET, 쿼리</td>
+</tr>
+<tr>
+<td>시각 입력 검사</td>
+<td><code>agreements.agreedAt</code> — 형식에 더해 달력에 없는 날짜·시각과 연도(1900~2200)를 <strong>항상</strong> 검사합니다</td>
+<td>시각 입력 칸이 없습니다</td>
+<td><code>updatedSince</code> — 문자열 형식은 묶음·목록 모두 검사하고, 실제 날짜·시각과 연도 범위(1900~2200)는 <strong>목록에서만</strong> 확인합니다</td>
+</tr>
+<tr>
+<td>같은 요청을 다시 보내면</td>
+<td>같은 연동 서비스 + 같은 이메일 + 같은 사업자등록번호면 같은 등록입니다. 다른 칸이나 파일이 달라도 바꾸지 않고 처음 <code>memberId</code>를 돌려줍니다. 처음 등록이 <code>review_required</code>였을 때의 예외는 3-5에 있습니다</td>
+<td>같은 연동 서비스 + 같은 <code>externalOrderId</code>면 같은 신청입니다. 같은 내용이면 처음 응답, 다른 내용이면 <code>409</code>입니다(4-4)</td>
+<td>읽기 전용입니다</td>
+</tr>
+<tr>
+<td>파일 크기 초과(<code>413</code>)</td>
+<td>사업자등록증 파일이 10MB 초과</td>
+<td>사진 한 장이 10MB 초과</td>
+<td>해당 없음</td>
+</tr>
+</tbody></table></div>
+<h2 id="s3">3. 회원·업체 등록</h2>
+<h3 id="s3-x1">회원·업체 등록 — <code>POST /partner/v1/members</code></h3>
+<p>신청자(회원)와 그 업체를 모두의인증에 <strong>한 번</strong> 등록합니다. 응답의 <code>memberId</code>를 저장해 두셨다가 인증 신청(4절)에 실어 주세요.</p>
+<h3 id="s3-1">3-1. 요청 모양</h3>
+<p><code>Content-Type: multipart/form-data</code>로, 부분(part)을 최대 두 개 보냅니다.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>부분 이름</th>
+<th>종류</th>
+<th>필수</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>data</code></td>
+<td>글자</td>
+<td>필수</td>
+<td>아래 3-2 칸들을 담은 <strong>JSON 문자열</strong> 하나(UTF-8, 64KiB 이하)</td>
+</tr>
+<tr>
+<td><code>businessRegistrationCertificate</code></td>
+<td>파일</td>
+<td>선택(아래)</td>
+<td>사업자등록증 파일 <strong>1개</strong>. PDF·JPG·PNG, <strong>10MB(10,485,760바이트) 이하</strong>. 형식은 파일 이름·<code>Content-Type</code>이 아니라 <strong>파일 내용</strong>으로 확인합니다</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>이 두 부분 말고 다른 부분은 보내지 마세요(있으면 <code>400</code>, 7-3).</li>
+<li><code>data</code>는 <strong>UTF-8 바이트 기준 64KiB(65,536바이트) 이하</strong>입니다(글자 수가 아님 — 한글은 한 글자가 3바이트).</li>
+<li>사업자등록증을 보내지 않으면 등록은 접수되지만 <code>review_required</code> 상태로 멈춥니다(3-4).</li>
+</ul>
+<h3 id="s3-2">3-2. <code>data</code> JSON 칸</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>칸</th>
+<th>필수</th>
+<th>규칙</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>member.name</code></td>
+<td>필수</td>
+<td>신청자 이름. 100자 이하</td>
+</tr>
+<tr>
+<td><code>member.email</code></td>
+<td>필수</td>
+<td>신청자 이메일. 이메일 형식, 100자 이하. <strong>회원(계정)을 구분하는 기준</strong>입니다(대소문자 구분 없음)</td>
+</tr>
+<tr>
+<td><code>member.phone</code></td>
+<td>필수</td>
+<td>신청자 한국 휴대폰 번호. <code>01012345678</code>, <code>010-1234-5678</code>, <code>+821012345678</code> 모두 받습니다(30자 이하). 연락용이며 회원 구분에는 쓰지 않습니다</td>
+</tr>
+<tr>
+<td><code>company.businessRegistrationNumber</code></td>
+<td>필수</td>
+<td>사업자등록번호. 하이픈·공백을 지운 뒤 <strong>숫자 10자리</strong>여야 합니다. <strong>업체를 구분하는 기준</strong>입니다</td>
+</tr>
+<tr>
+<td><code>company.name</code></td>
+<td>필수</td>
+<td>업체명. 255자 이하</td>
+</tr>
+<tr>
+<td><code>company.representativeName</code></td>
+<td>필수</td>
+<td>대표자명. 100자 이하</td>
+</tr>
+<tr>
+<td><code>company.postalCode</code></td>
+<td>필수</td>
+<td>우편번호. 5~10자</td>
+</tr>
+<tr>
+<td><code>company.address</code></td>
+<td>필수</td>
+<td>주소. 500자 이하</td>
+</tr>
+<tr>
+<td><code>company.detailedAddress</code></td>
+<td>선택</td>
+<td>상세주소. 500자 이하</td>
+</tr>
+<tr>
+<td><code>agreements.termsVersion</code></td>
+<td>필수</td>
+<td>연동사 화면에서 신청자가 동의한 약관 버전. 50자 이하</td>
+</tr>
+<tr>
+<td><code>agreements.agreedAt</code></td>
+<td>필수</td>
+<td>동의한 시각. 2-2의 시각 입력 형식</td>
+</tr>
+</tbody></table></div>
+<p><code>member</code>, <code>company</code>, <code>agreements</code>는 각각 통째로 필수인 객체입니다. 빠지면 <code>400</code>입니다.</p>
+<ul>
+<li>길이·필수 검사는 <strong>앞뒤 공백을 지운 뒤</strong> 합니다. 공백뿐인 필수 칸은 <code>REQUIRED</code>입니다.</li>
+<li><code>agreements.agreedAt</code>은 형식이 맞아도 달력에 없는 날짜·시각(2월 30일, 25시 등)이거나 연도가 1900~2200 밖이면 <code>FORMAT</code>입니다.</li>
+<li>함께 드리는 OpenAPI 파일은 칸 이름·종류·길이·필수 여부를 담지만, 위 두 규칙과 <code>data</code>의 바이트 상한까지는 표현하지 못합니다. 최종 판단은 서버가 합니다.</li>
+<li><code>company.businessRegistrationNumber</code>는 다른 칸과 다르게 정리합니다. 하이픈과 공백(전각 공백 포함)을 자리와 상관없이 지운 뒤 숫자 10자리인지 봅니다. 폭 없는 공백은 지우지 않으므로, 가장자리에 있어도 <code>FORMAT</code>으로 거절됩니다.</li>
+</ul>
+<h3 id="s3-3">3-3. 응답 (<code>200</code>)</h3>
+<pre><code class="language-json">{
+  &quot;statusCode&quot;: 200,
+  &quot;memberId&quot;: &quot;b3a1c0de-0000-4000-8000-000000000001&quot;,
+  &quot;status&quot;: &quot;registered&quot;,
+  &quot;registeredAt&quot;: &quot;2026-11-19T03:15:00.000Z&quot;
+}
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>칸</th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>memberId</code></td>
+<td>등록 번호(UUID). 저장해 두시고 등록 확인·인증 신청에 실어 주세요</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>registered</code> 또는 <code>review_required</code> (3-4)</td>
+</tr>
+<tr>
+<td><code>registeredAt</code></td>
+<td>처음 등록된 시각</td>
+</tr>
+</tbody></table></div>
+<h3 id="s3-4">3-4. 상태 두 가지</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th><code>status</code></th>
+<th>뜻</th>
+<th>할 일</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>registered</code></td>
+<td>등록 요청을 받아 처리 중이거나 처리가 끝났습니다. 인증 신청을 받을 수 있는지는 인증 신청(4절)의 응답으로 알려 드립니다</td>
+<td>없음</td>
+</tr>
+<tr>
+<td><code>review_required</code></td>
+<td><strong>사업자등록증 파일이 없어</strong> 등록이 멈춰 있습니다</td>
+<td>같은 이메일·같은 사업자등록번호로, 이번에는 사업자등록증을 실어 다시 보내 주세요. 같은 <code>memberId</code>로 이어서 처리됩니다</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><code>status</code>는 보내 주신 내용(사업자등록증이 있는지)으로만 정해집니다. 모두의인증에 이미 같은 회원·업체가 있는지는 응답에 나오지 않습니다.</li>
+<li>이 판 기준으로 <code>review_required</code>가 풀리는 길은 &quot;사업자등록증을 실어 다시 보내기&quot; 하나입니다.</li>
+</ul>
+<h3 id="s3-5">3-5. 같은 등록을 다시 보내면</h3>
+<ul>
+<li><strong>같은 연동 서비스 + 같은 이메일 + 같은 사업자등록번호</strong>면 같은 등록으로 봅니다. 기준은 키 값이 아니라 키가 속한 연동 서비스라서, 키를 바꿔 발급받아도 같은 등록으로 이어집니다. 이메일은 대소문자 구분 없이, 사업자등록번호는 하이픈·공백을 지운 숫자로 비교합니다.</li>
+<li>같은 등록이면 처음 받은 <code>memberId</code>와 지금 <code>status</code>를 그대로 돌려주고, 다른 칸이나 파일이 달라도 바꾸지 않습니다. 응답이 끊겨 결과를 모를 때는 그대로 다시 보내셔도 됩니다.</li>
+<li>다시 보낸 요청도 <strong>3-1·3-2 규칙을 모두 통과해야</strong> 같은 등록으로 확인합니다. 규칙에 맞지 않으면 기존 등록과 상관없이 입력 오류는 <code>400</code> <code>VALIDATION_FAILED</code>, 사업자등록증 파일 크기 초과는 <code>413</code> <code>FILE_TOO_LARGE</code>입니다.</li>
+<li>예외 하나: 처음 등록이 <code>review_required</code>(파일 없음)였다면, 사업자등록증을 실어 다시 보낸 그 요청의 내용(필수 칸을 갖춘 <code>data</code> + 사업자등록증)으로 같은 <code>memberId</code>에서 처음부터 처리합니다. 이때는 새 처리이므로, 연동 서비스가 지금 새 등록을 받을 수 없는 상태면 <code>403</code> <code>PARTNER_UNAVAILABLE</code>입니다(이미 처리가 끝난 등록을 그대로 다시 보낸 경우는 처음 결과를 돌려줍니다).</li>
+<li>이메일이나 사업자등록번호가 다르면 다른 등록입니다. 한 사람이 여러 업체를 등록하거나 한 업체에 여러 사람을 등록할 수 있습니다.</li>
+</ul>
+<h3 id="s3-6">3-6. 회원·업체는 이렇게 처리됩니다</h3>
+<ul>
+<li><strong>회원</strong>: 같은 이메일의 모두의인증 회원이 없으면 새로 만듭니다. 있으면 그 회원으로 이어질 수 있습니다. 기존 회원의 정보(이름·연락처 등)는 보내 주신 값으로 바꾸지 않습니다.</li>
+<li><strong>업체</strong>: 같은 사업자등록번호의 업체가 없으면 보내 주신 정보와 사업자등록증으로 새로 만듭니다. 있으면 그 업체로 이어질 수 있습니다. 기존 업체의 정보는 바꾸지 않습니다.</li>
+<li><strong>늘 이어지는 것은 아닙니다</strong>: 기존 회원·업체와 이어지지 않으면, 이후 인증 신청이 신청자 본인의 접수가 되거나 담당자 확인이 필요해 <code>409</code> <code>MEMBER_REVIEW_REQUIRED</code>(4-5)가 될 수 있습니다. 접수가 어느 회원·업체에 속하는지는 등록 응답만으로 판단하지 마세요.</li>
+<li><strong>연동사가 확인해 주실 것</strong>: 신청자가 그 업체 소속인지와 그 이메일의 주인인지는 <strong>연동사가 확인한 뒤</strong> 보내 주세요. 같은 사업자등록번호의 업체가 모두의인증에 있으면 신청이 그 업체로 이어질 수 있습니다.</li>
+</ul>
+<h3 id="s3-7">3-7. 등록 확인 — <code>GET /partner/v1/members/{memberId}</code></h3>
+<pre><code class="language-json">{
+  &quot;statusCode&quot;: 200,
+  &quot;memberId&quot;: &quot;b3a1c0de-0000-4000-8000-000000000001&quot;,
+  &quot;status&quot;: &quot;registered&quot;,
+  &quot;registeredAt&quot;: &quot;2026-11-19T03:15:00.000Z&quot;,
+  &quot;statusChangedAt&quot;: &quot;2026-11-19T03:20:00.000Z&quot;
+}
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>칸</th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>memberId</code>, <code>status</code>, <code>registeredAt</code></td>
+<td>3-3과 같음</td>
+</tr>
+<tr>
+<td><code>statusChangedAt</code></td>
+<td>상태가 마지막으로 바뀐(또는 다시 처리된) 시각</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>없는 번호이거나 다른 연동 서비스의 번호면 <code>404</code> <code>MEMBER_NOT_FOUND</code>입니다. 회원·업체 정보는 돌려주지 않습니다.</li>
+</ul>
+<h3 id="s3-8">3-8. 요청 예시</h3>
+<pre><code class="language-bash">curl -X POST &quot;$MODUCERTI_API_BASE/partner/v1/members&quot; \
+  -H &quot;x-api-key: $MODUCERTI_PARTNER_KEY&quot; \
+  --form-string &#39;data={&quot;member&quot;:{&quot;name&quot;:&quot;신청 담당자&quot;,&quot;email&quot;:&quot;applicant@example.com&quot;,&quot;phone&quot;:&quot;010-0000-0000&quot;},&quot;company&quot;:{&quot;businessRegistrationNumber&quot;:&quot;000-00-00000&quot;,&quot;name&quot;:&quot;시험 업체&quot;,&quot;representativeName&quot;:&quot;시험 대표자&quot;,&quot;postalCode&quot;:&quot;00000&quot;,&quot;address&quot;:&quot;시험 주소&quot;,&quot;detailedAddress&quot;:&quot;시험 상세주소&quot;},&quot;agreements&quot;:{&quot;termsVersion&quot;:&quot;2026-11-01&quot;,&quot;agreedAt&quot;:&quot;2026-11-19T06:30:00Z&quot;}}&#39; \
+  -F &quot;businessRegistrationCertificate=@./certificate.pdf;type=application/pdf&quot;
+</code></pre>
+<ul>
+<li><code>data</code>는 <strong><code>--form-string</code></strong> 으로 보내 주세요. curl의 <code>-F &#39;data=…&#39;</code>는 값 안에 <code>;</code>가 있으면 그 뒤를 잘라 보냅니다(업체명·주소에 <code>;</code>가 들어가면 깨진 JSON이 되어 <code>400</code>이 됩니다).</li>
+<li>위 값은 형식에 맞는 시험용 자리 값입니다. 같은 이메일·사업자등록번호로 다시 보내면 3-5대로 같은 등록이 돌아오니, 새 등록을 시험할 때는 이메일·사업자등록번호를 바꿔 주세요.</li>
+</ul>
+<p>등록 확인은 위 등록 응답에서 받은 <code>memberId</code>를 경로에 넣어 부릅니다(아래 <code>&lt;memberId&gt;</code> 자리).</p>
+<pre><code class="language-bash">curl &quot;$MODUCERTI_API_BASE/partner/v1/members/&lt;memberId&gt;&quot; \
+  -H &quot;x-api-key: $MODUCERTI_PARTNER_KEY&quot;
+</code></pre>
+<h2 id="s4">4. 인증 신청 — <code>POST /partner/v1/applications</code></h2>
+<p>회원·업체 등록(3절)으로 등록한 회원·업체(<code>memberId</code>)의 이름으로 인증 신청 1건을 <strong>사진과 함께</strong> 보냅니다. 응답의 <code>applicationId</code>를 저장해 두셨다가 신청 조회(5절)에 써 주세요.</p>
+<h3 id="s4-1">4-1. 요청 모양</h3>
+<p><code>Content-Type: multipart/form-data</code>로 보냅니다. 부분(part)은 글자 부분 하나와 사진 부분 1~5개입니다.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>부분 이름</th>
+<th>종류</th>
+<th>필수</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>data</code></td>
+<td>글자</td>
+<td>필수</td>
+<td>아래 4-2 칸들을 담은 <strong>JSON 문자열</strong> 하나(UTF-8, 64KiB 이하)</td>
+</tr>
+<tr>
+<td><code>photos</code></td>
+<td>파일</td>
+<td>필수</td>
+<td>제품 사진 <strong>1~5장</strong>. 같은 이름 <code>photos</code>로 장수만큼 반복해 보냅니다. JPG·PNG, <strong>장당 10MB(10,485,760바이트) 이하</strong>. 형식은 파일 이름·<code>Content-Type</code>이 아니라 <strong>파일 내용</strong>으로 확인합니다</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>이 두 이름 말고 다른 부분은 보내지 마세요(있으면 <code>400</code>, 7-3).</li>
+<li><code>data</code>는 <strong>UTF-8 바이트 기준 64KiB(65,536바이트) 이하</strong>입니다(글자 수가 아님 — 한글은 한 글자가 3바이트).</li>
+<li>사진은 <strong>보낸 순서대로</strong> 저장하고, <strong>첫 번째 사진이 대표 사진</strong>이 됩니다.</li>
+<li>한 요청의 전체 크기는 최대 약 50MB(사진 5장 × 10MB)입니다. 사진 주소(URL)를 보내는 방식이나 사진만 따로 올리는 경로는 없습니다.</li>
+<li><code>Content-Type: application/json</code> 본문은 받지 않습니다(<code>400</code>, 7-3).</li>
+</ul>
+<h3 id="s4-2">4-2. <code>data</code> JSON 칸</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>칸</th>
+<th>필수</th>
+<th>규칙</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>externalOrderId</code></td>
+<td>필수</td>
+<td>연동사가 정하는 신청 번호. 100자 이하, <strong>쉼표(<code>,</code>)는 쓸 수 없습니다</strong>. 같은 신청을 다시 보낼 때의 기준입니다(4-4)</td>
+</tr>
+<tr>
+<td><code>memberId</code></td>
+<td>필수</td>
+<td>회원·업체 등록 응답의 번호. 앞뒤 공백을 지운 뒤 1~100자입니다. 새 신청을 처리할 때 UUID 형식과 같은 연동 서비스의 등록인지 확인합니다</td>
+</tr>
+<tr>
+<td><code>workspaceId</code></td>
+<td>선택</td>
+<td>연동사 쪽 워크스페이스 구분값. 100자 이하</td>
+</tr>
+<tr>
+<td><code>product.name</code></td>
+<td>필수</td>
+<td>제품명. 100자 이하</td>
+</tr>
+<tr>
+<td><code>product.modelName</code></td>
+<td>선택</td>
+<td>모델명. 100자 이하</td>
+</tr>
+<tr>
+<td><code>product.linkUrl</code></td>
+<td>선택</td>
+<td>제품 링크. <code>http://</code> 또는 <code>https://</code>로 시작하고 공백이 없는 주소, 500자 이하</td>
+</tr>
+<tr>
+<td><code>product.note</code></td>
+<td>선택</td>
+<td>담당자에게 전할 메모. 1,000자 이하</td>
+</tr>
+</tbody></table></div>
+<p><code>product</code>는 통째로 필수인 객체입니다. 빠지면 <code>400</code>입니다.</p>
+<ul>
+<li>길이·필수 검사는 <strong>앞뒤 공백을 지운 뒤</strong> 합니다. 공백뿐인 필수 칸은 <code>REQUIRED</code>입니다.</li>
+<li>약관 동의 칸은 신청에 없습니다. 회원·업체 등록 때 보내 주신 동의 내용을 그대로 씁니다.</li>
+<li>제품명·모델명·링크·메모는 모두의인증 담당자가 상담·견적 때 참고하는 정보입니다.</li>
+<li>함께 드리는 OpenAPI 파일은 칸 이름·종류·길이·필수 여부를 담지만, 공백 처리와 <code>data</code>의 바이트 상한까지는 표현하지 못합니다. 최종 판단은 서버가 합니다.</li>
+</ul>
+<h3 id="s4-3">4-3. 응답 (<code>200</code>)</h3>
+<pre><code class="language-json">{
+  &quot;statusCode&quot;: 200,
+  &quot;applicationId&quot;: &quot;c4b2d1ef-0000-4000-8000-000000000002&quot;,
+  &quot;externalOrderId&quot;: &quot;ORDER-0001&quot;,
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;receivedAt&quot;: &quot;2026-11-19T03:15:00.300Z&quot;
+}
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>칸</th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>applicationId</code></td>
+<td>모두의인증의 신청 번호(UUID). 저장해 두시고 신청 조회에 써 주세요</td>
+</tr>
+<tr>
+<td><code>externalOrderId</code></td>
+<td>보내 주신 신청 번호</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>접수 응답에서는 항상 <code>received</code>입니다. 지금 상태는 신청 조회(5절)로 확인해 주세요</td>
+</tr>
+<tr>
+<td><code>receivedAt</code></td>
+<td>접수된 시각</td>
+</tr>
+</tbody></table></div>
+<h3 id="s4-4">4-4. 같은 <code>externalOrderId</code>로 다시 보내면</h3>
+<ul>
+<li><strong>같은 연동 서비스 + 같은 <code>externalOrderId</code></strong> 면 같은 신청으로 봅니다. 기준은 키 값이 아니라 키가 속한 연동 서비스라서, 키를 바꿔 발급받아도 같은 신청으로 이어집니다.</li>
+<li><strong>같은 내용</strong>이면 처음 받은 응답(같은 <code>applicationId</code>·같은 <code>receivedAt</code>, <code>status</code>는 <code>received</code>)을 그대로 돌려주고, 사진을 다시 저장하지 않습니다. 응답이 끊겨 결과를 모를 때는 <strong>같은 내용 그대로</strong> 다시 보내셔도 중복 접수가 생기지 않습니다.</li>
+<li><strong>다른 내용</strong>이면 <code>409</code> <code>EXTERNAL_ORDER_CONFLICT</code>이고, 처음 접수한 신청은 바뀌지 않습니다. 내용을 바꾸려면 새 <code>externalOrderId</code>로 보내 주세요.</li>
+<li>&quot;같은 내용&quot;은 <strong><code>data</code>의 칸 값(앞뒤 공백을 지운 값)</strong> 과 <strong>사진 파일의 내용·보낸 순서</strong>로 판단합니다. 사진 한 장의 내용이 다르거나, 순서나 장수가 다르면 다른 내용입니다. 사진 파일 이름과 <code>Content-Type</code>은 보지 않습니다. <code>memberId</code>는 대소문자 구분 없이 비교합니다.<ul>
+<li>사진을 다시 압축하거나 크기를 바꿔 파일 내용이 달라지면, 바꾼 요청이 입력·사진 규칙을 통과했을 때 <code>409</code>가 됩니다. 재전송에는 <strong>처음 보낸 파일 그대로</strong> 써 주세요.</li>
+</ul>
+</li>
+<li>재전송도 요청 모양, 사진 규칙, <code>data</code>의 필수 칸·종류·길이·문자 규칙을 먼저 검사합니다. 여기서 입력 오류는 <code>400 VALIDATION_FAILED</code>, 사진 크기 초과는 <code>413 FILE_TOO_LARGE</code>입니다. 검사를 통과하면 기존 신청의 내용을 대조합니다. <code>memberId</code>의 UUID 형식과 등록 소유는 새 신청에서만 확인합니다.</li>
+<li>이미 접수된 신청을 같은 내용으로 다시 보낸 경우는, 그 뒤 사정이 바뀌었더라도(예: 연동 서비스가 새 신청을 받을 수 없는 상태) 처음 응답을 돌려줍니다.</li>
+</ul>
+<h3 id="s4-5">4-5. 신청을 접수하지 못하는 경우</h3>
+<p>입력이 규칙에 맞아도 아래 경우에는 신청을 만들지 않습니다(사진도 저장하지 않습니다).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>응답</th>
+<th>언제</th>
+<th>할 일</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>400</code> <code>VALIDATION_FAILED</code> (<code>memberId</code> / <code>INVALID</code>)</td>
+<td>새 신청에서 <code>memberId</code>가 UUID 형식이 아니거나, 없는 등록이거나, 다른 연동 서비스의 등록</td>
+<td>회원·업체 등록 응답의 <code>memberId</code>인지 확인해 주세요</td>
+</tr>
+<tr>
+<td><code>409</code> <code>MEMBER_REVIEW_REQUIRED</code></td>
+<td>이 <code>memberId</code>의 등록으로는 지금 신청을 접수할 수 없어 모두의인증 담당자의 확인이 필요합니다</td>
+<td>응답의 <code>traceId</code>와 함께 안내받은 문의처로 문의해 주세요</td>
+</tr>
+<tr>
+<td><code>409</code> <code>EXTERNAL_ORDER_CONFLICT</code></td>
+<td>같은 <code>externalOrderId</code>로 다른 내용이 이미 접수되어 있음(4-4)</td>
+<td>새 <code>externalOrderId</code>로 보내거나, 처음 보낸 내용 그대로 다시 보내 주세요</td>
+</tr>
+<tr>
+<td><code>403</code> <code>PARTNER_UNAVAILABLE</code></td>
+<td>이 연동 서비스로 지금 새 신청을 받을 수 없음</td>
+<td>모두의인증에 문의해 주세요</td>
+</tr>
+</tbody></table></div>
+<h3 id="s4-6">4-6. 요청 예시</h3>
+<pre><code class="language-bash">curl -X POST &quot;$MODUCERTI_API_BASE/partner/v1/applications&quot; \
+  -H &quot;x-api-key: $MODUCERTI_PARTNER_KEY&quot; \
+  --form-string &#39;data={&quot;externalOrderId&quot;:&quot;ORDER-0001&quot;,&quot;memberId&quot;:&quot;&lt;memberId&gt;&quot;,&quot;workspaceId&quot;:&quot;ws-test-01&quot;,&quot;product&quot;:{&quot;name&quot;:&quot;시험 제품(무선 충전기)&quot;,&quot;modelName&quot;:&quot;TEST-WC-100&quot;,&quot;linkUrl&quot;:&quot;https://example.com/items/test-0001&quot;,&quot;note&quot;:&quot;시험 신청입니다.&quot;}}&#39; \
+  -F &quot;photos=@./photo-1.jpg;type=image/jpeg&quot; \
+  -F &quot;photos=@./photo-2.png;type=image/png&quot;
+</code></pre>
+<ul>
+<li><code>&lt;memberId&gt;</code>에는 회원·업체 등록 응답에서 받은 번호를 넣어 주세요. 새 신청에는 아직 사용하지 않은 <code>externalOrderId</code>를 쓰세요.</li>
+<li><code>data</code>는 <strong><code>--form-string</code></strong> 으로 보내 주세요. curl의 <code>-F &#39;data=…&#39;</code>는 값 안에 <code>;</code>가 있으면 그 뒤를 잘라 보냅니다(메모나 링크에 <code>;</code>가 들어가면 깨진 JSON이 되어 <code>400</code>이 됩니다).</li>
+<li>사진은 <code>-F &quot;photos=@파일&quot;</code>을 장수만큼 반복합니다. 순서대로 저장되고 첫 장이 대표 사진입니다.</li>
+<li>같은 <code>externalOrderId</code>에 처음과 같은 <code>data</code> 값과 사진 파일을 같은 순서로 보내면 처음 접수 응답을 받습니다. 유효한 요청이지만 내용이 다르면 <code>409 EXTERNAL_ORDER_CONFLICT</code>입니다(4-4).</li>
+</ul>
+<h2 id="s5">5. 신청 조회</h2>
+<p>조회는 읽기 전용이고, 같은 연동 서비스로 보낸 신청만 보입니다. 응답 칸은 세 조회가 같습니다.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>칸</th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>applicationId</code></td>
+<td>모두의인증의 신청 번호</td>
+</tr>
+<tr>
+<td><code>externalOrderId</code></td>
+<td>연동사가 보낸 신청 번호</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>지금 상태(5-4)</td>
+</tr>
+<tr>
+<td><code>statusChangedAt</code></td>
+<td>이 상태가 된 시각. 상태 기록을 바탕으로 계산하며, 기록이 부족하면 그 신청이 마지막으로 수정된 시각(그것도 없으면 접수 시각)을 대신 씁니다. 상태 값은 정확하지만 이 시각은 실제보다 늦을 수 있습니다. 접수 직후에는 <code>receivedAt</code>보다 조금 이를 수 있습니다(아래 예시처럼)</td>
+</tr>
+<tr>
+<td><code>receivedAt</code></td>
+<td>접수 시각</td>
+</tr>
+</tbody></table></div>
+<h3 id="s5-1">5-1. 건별 — <code>GET /partner/v1/applications/{applicationId}</code></h3>
+<pre><code class="language-json">{
+  &quot;statusCode&quot;: 200,
+  &quot;applicationId&quot;: &quot;c4b2d1ef-0000-4000-8000-000000000002&quot;,
+  &quot;externalOrderId&quot;: &quot;ORDER-0001&quot;,
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;statusChangedAt&quot;: &quot;2026-11-19T03:15:00.100Z&quot;,
+  &quot;receivedAt&quot;: &quot;2026-11-19T03:15:00.300Z&quot;
+}
+</code></pre>
+<ul>
+<li>없는 번호이거나, 다른 연동 서비스의 신청이거나, UUID 형식이 아니면 모두 같은 <code>404</code> <code>APPLICATION_NOT_FOUND</code>입니다.</li>
+</ul>
+<h3 id="s5-2">5-2. 묶음 — <code>GET /partner/v1/applications?ids=…</code> 또는 <code>?externalOrderIds=…</code></h3>
+<ul>
+<li><code>ids</code>(모두의인증 신청 번호) <strong>또는</strong> <code>externalOrderIds</code>(연동사 신청 번호)를 쉼표로 이어 보냅니다. 둘을 함께 보내면 <code>400</code> <code>VALIDATION_FAILED</code>입니다.</li>
+<li>한 번에 <strong>최대 50건</strong>(중복을 뺀 개수)입니다. 넘으면 <code>400</code> <code>TOO_MANY_IDS</code>입니다.</li>
+<li>쉼표로 나눈 각 항목의 앞뒤 공백은 지웁니다. <code>ids</code> 전체는 4,000자, <code>externalOrderIds</code> 전체는 6,000자 이하여야 합니다.</li>
+<li><strong>묶음 조회에는 <code>after</code>·<code>limit</code>·<code>state</code>·<code>updatedSince</code>를 생략해 주세요.</strong> 함께 보내면 <code>after</code>의 길이·NUL 문자, <code>limit</code>의 숫자 형식, <code>state</code>의 허용값, <code>updatedSince</code>의 문자열 형식을 검사합니다. 위반하면 묶음도 <code>400 VALIDATION_FAILED</code>입니다. 이 검사를 통과하면 묶음에서는 네 값을 무시합니다. 실제 달력 날짜와 <code>after</code>가 유효한 커서인지는 목록에서만 확인합니다.</li>
+<li>같은 신청을 <code>ids</code>에서 대소문자만 다르게 두 번 보내면 결과에 두 번 담길 수 있으니, 신청 번호는 소문자로 통일해 보내 주세요.</li>
+</ul>
+<pre><code class="language-json">{
+  &quot;statusCode&quot;: 200,
+  &quot;items&quot;: [
+    {
+      &quot;applicationId&quot;: &quot;c4b2d1ef-0000-4000-8000-000000000002&quot;,
+      &quot;externalOrderId&quot;: &quot;ORDER-0001&quot;,
+      &quot;status&quot;: &quot;received&quot;,
+      &quot;statusChangedAt&quot;: &quot;2026-11-19T03:15:00.100Z&quot;,
+      &quot;receivedAt&quot;: &quot;2026-11-19T03:15:00.300Z&quot;
+    }
+  ],
+  &quot;notFound&quot;: [&quot;00000000-0000-4000-8000-000000000000&quot;]
+}
+</code></pre>
+<ul>
+<li>위는 <code>ids</code>로 조회한 예시입니다(<code>notFound</code>에 찾지 못한 신청 번호). <code>externalOrderIds</code>로 조회하면 <code>notFound</code>에는 찾지 못한 연동사 신청 번호가 담깁니다.</li>
+<li><code>items</code>는 요청한 순서입니다(똑같은 값을 반복해 보내면 한 번만 담깁니다).</li>
+<li>없는 신청, 다른 연동 서비스의 신청, UUID가 아닌 <code>ids</code> 항목은 오류 없이 <code>notFound</code>에 각 항목의 앞뒤 공백을 지운 값으로 담깁니다. 이유는 구분해 알려 드리지 않습니다.</li>
+</ul>
+<h3 id="s5-3">5-3. 전체 재대조 목록 — <code>GET /partner/v1/applications</code></h3>
+<p><code>ids</code>·<code>externalOrderIds</code> 없이 부르면 같은 연동 서비스로 보낸 신청 전체를 쪽 단위로 돌려줍니다. 연동사 쪽 목록과 모두의인증 쪽 목록을 맞춰 볼 때 씁니다.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>쿼리</th>
+<th>필수</th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>limit</code></td>
+<td>선택</td>
+<td>한 쪽의 개수. 숫자만, 최대 6자리. 기본 50, 1~200 범위로 맞춰집니다(200 초과는 200)</td>
+</tr>
+<tr>
+<td><code>after</code></td>
+<td>선택</td>
+<td>이전 응답의 <code>nextAfter</code> 값을 <strong>그대로</strong> 넣습니다(값의 안쪽 구조는 해석하지 마세요). 빈 문자열은 <code>after</code>를 보내지 않은 것과 같습니다. 200자를 넘으면 <code>400</code> <code>VALIDATION_FAILED</code>(<code>after</code> / <code>MAX_LENGTH</code>), NUL 문자가 있으면 <code>400</code> <code>VALIDATION_FAILED</code>(<code>after</code> / <code>FORMAT</code>), 이 검사를 통과했는데 읽을 수 없는 값이면 <code>400</code> <code>INVALID_CURSOR</code>입니다</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>선택</td>
+<td><code>open</code>만 가능합니다. 아직 끝나지 않은 신청(<code>received</code>, <code>in_progress</code>)만 돌려줍니다. 다른 값은 <code>400</code> <code>VALIDATION_FAILED</code>(<code>state</code> / <code>ONE_OF</code>)</td>
+</tr>
+<tr>
+<td><code>updatedSince</code></td>
+<td>선택</td>
+<td>2-2의 시각 입력 형식. 그 시각 <strong>이후(같은 시각 포함)에 접수되었거나 상태 기록이 생긴</strong> 신청만 돌려줍니다. 겉으로 보이는 <code>status</code>가 같아도 포함될 수 있습니다. 비교는 밀리초 단위이고 그 미만 자리(소수초 넷째 자리부터)는 버립니다. 그래서 보낸 시각보다 1밀리초 미만 이른 기록이 포함될 수 있습니다</td>
+</tr>
+</tbody></table></div>
+<pre><code class="language-json">{
+  &quot;statusCode&quot;: 200,
+  &quot;items&quot;: [
+    {
+      &quot;applicationId&quot;: &quot;c4b2d1ef-0000-4000-8000-000000000002&quot;,
+      &quot;externalOrderId&quot;: &quot;ORDER-0001&quot;,
+      &quot;status&quot;: &quot;received&quot;,
+      &quot;statusChangedAt&quot;: &quot;2026-11-19T03:15:00.100Z&quot;,
+      &quot;receivedAt&quot;: &quot;2026-11-19T03:15:00.300Z&quot;
+    }
+  ],
+  &quot;nextAfter&quot;: null
+}
+</code></pre>
+<ul>
+<li><code>nextAfter</code>는 다음 쪽이 있으면 서버가 만든 문자열이고, 마지막 쪽이면 위처럼 <code>null</code>입니다. 다음 쪽을 부를 때는 <strong>서버에서 받은 값을 그대로</strong> <code>after</code>에 넣어 주세요(직접 만든 값은 <code>400 INVALID_CURSOR</code>입니다).</li>
+</ul>
+<p><strong>쪽 넘기는 방법</strong></p>
+<ol>
+<li>첫 쪽은 <code>after</code> 없이 부릅니다(필요하면 <code>limit</code>, <code>state</code>, <code>updatedSince</code> 지정).</li>
+<li>응답의 <code>nextAfter</code>가 <code>null</code>이 아니면, 같은 쿼리에 <code>after=&lt;nextAfter&gt;</code>를 넣어 다음 쪽을 부릅니다.</li>
+<li><code>nextAfter</code>가 <code>null</code>이면 끝입니다.</li>
+</ol>
+<ul>
+<li>정렬은 접수 시각이 이른 것부터이고(같으면 <code>applicationId</code> 순), 신청의 상태가 중간에 바뀌어도 순서는 변하지 않습니다.</li>
+<li><strong>빠지지 않는다는 보장은 <code>state</code>·<code>updatedSince</code> 없이 읽는 &quot;필터 없는 전체 읽기&quot;에만 해당합니다.</strong> 필터 없이 끝까지 읽으면, 읽는 도중 상태가 바뀐 신청도 빠지지 않습니다. 다만 읽는 도중 새로 접수된 신청은 이번 회차에 안 보일 수 있으니 다음 회차에서 확인해 주세요.</li>
+<li><strong>필터를 켠 목록은 쪽마다 그 시점의 상태로 다시 거릅니다.</strong> 예를 들어 <code>state=open</code>으로 첫 쪽을 받은 뒤 다음 쪽을 받기 전에 다음 쪽 대상 신청이 합격·취소 등으로 바뀌면, 그 신청은 이번 <code>state=open</code> 읽기에서 빠집니다. 신청을 빠짐없이 맞춰 보는 용도로는 필터를 쓰지 마세요.</li>
+<li><strong>권장</strong>: 정확한 전체 대조는 필터 없이 전체 읽기를 하고(하루 1회 정도), 자주 돌리는 가벼운 점검은 건별·묶음 조회(최대 50건)나 <code>updatedSince</code>로 합니다. <code>updatedSince</code>를 쓸 때는 이전 회차를 시작한 시각보다 여유를 두고 앞당겨 겹쳐 읽어 주세요.</li>
+<li>쪽을 넘기는 동안 같은 <code>limit</code>, <code>state</code>, <code>updatedSince</code>를 유지해 주세요.</li>
+<li>신청이 많아질수록 한 번의 전체 읽기에 필요한 쪽 수와 시간이 늘어납니다. 호출 한도를 고려해 주기를 정해 주세요.</li>
+</ul>
+<h3 id="s5-4">5-4. 상태 5종</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th><code>status</code></th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>received</code></td>
+<td>신청이 접수된 단계입니다</td>
+</tr>
+<tr>
+<td><code>in_progress</code></td>
+<td>진행 중입니다. 상담, 견적, 시험 준비, 시험 중, <strong>시험이 끝났지만 합격·불합격이 확정되기 전</strong>, <strong>취소를 요청했지만 아직 승인되지 않은</strong> 경우가 모두 여기에 들어갑니다</td>
+</tr>
+<tr>
+<td><code>passed</code></td>
+<td>합격</td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td>불합격</td>
+</tr>
+<tr>
+<td><code>unable</code></td>
+<td>취소되었거나 더 이상 진행할 수 없게 처리된 신청</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><strong>상태는 되돌아갈 수 있습니다.</strong> 예: 합격과 불합격이 정정되는 경우, 취소 요청이 거절되어 <code>in_progress</code>로 돌아오는 경우, 취소가 되돌려지는 경우. <code>passed</code>·<code>failed</code>·<code>unable</code>도 최종값으로 굳히지 말고, 이후 조회에서 값이 바뀔 수 있다고 보고 만들어 주세요.</li>
+<li>상태 값의 종류(위 5개)는 v1에서 바뀌지 않습니다.</li>
+<li>모두의인증 쪽의 세부 진행 단계 이름은 전달하지 않고 위 5개로만 보여 드립니다.</li>
+</ul>
+<h3 id="s5-5">5-5. 요청 예시</h3>
+<p>건별 조회는 인증 신청 응답에서 받은 <code>applicationId</code>를 경로에 넣어 부릅니다.</p>
+<pre><code class="language-bash">curl &quot;$MODUCERTI_API_BASE/partner/v1/applications/&lt;applicationId&gt;&quot; \
+  -H &quot;x-api-key: $MODUCERTI_PARTNER_KEY&quot;
+</code></pre>
+<p>묶음 조회(연동사 신청 번호로):</p>
+<pre><code class="language-bash">curl &quot;$MODUCERTI_API_BASE/partner/v1/applications?externalOrderIds=ORDER-0001,ORDER-0002&quot; \
+  -H &quot;x-api-key: $MODUCERTI_PARTNER_KEY&quot;
+</code></pre>
+<p>전체 재대조 목록(첫 쪽, 그리고 응답의 <code>nextAfter</code>로 다음 쪽):</p>
+<pre><code class="language-bash">curl &quot;$MODUCERTI_API_BASE/partner/v1/applications?limit=1&quot; \
+  -H &quot;x-api-key: $MODUCERTI_PARTNER_KEY&quot;
+
+curl &quot;$MODUCERTI_API_BASE/partner/v1/applications?limit=1&amp;after=&lt;nextAfter&gt;&quot; \
+  -H &quot;x-api-key: $MODUCERTI_PARTNER_KEY&quot;
+</code></pre>
+<h2 id="s6">6. 준비 중인 기능</h2>
+<p>아래 기능은 준비 중입니다. 규격은 열리는 대로 이 문서와 OpenAPI 파일의 다음 판에 이어 붙입니다.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>기능</th>
+<th>내용</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>발급 문서 내려받기</td>
+<td>신청마다 발급 문서(인증서 등) 목록을 보고, 문서마다 내려받습니다</td>
+<td>준비 중</td>
+</tr>
+<tr>
+<td>웹훅</td>
+<td>상태가 바뀌면 알려 드립니다. 알림을 받으면 조회 API로 최신 내용을 확인합니다</td>
+<td>준비 중</td>
+</tr>
+<tr>
+<td>신청 조회 칸 추가</td>
+<td>신청 조회에 견적(최종 견적서)·발급 문서 목록 추가 예정</td>
+<td>준비 중</td>
+</tr>
+<tr>
+<td>정산</td>
+<td>정산 내역 조회</td>
+<td>준비 중</td>
+</tr>
+</tbody></table></div>
+<h2 id="s7">7. 오류</h2>
+<h3 id="s7-1">7-1. 오류 모양</h3>
+<p>모든 오류는 같은 모양입니다. 응답 머리글 <code>X-Trace-Id</code>에도 같은 <code>traceId</code>가 붙습니다. 문의하실 때 <code>traceId</code>를 알려 주시면 빨리 찾을 수 있습니다.</p>
+<p>입력 오류(<code>400</code>)의 예:</p>
+<pre><code class="language-json">{
+  &quot;statusCode&quot;: 400,
+  &quot;errorCode&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;message&quot;: &quot;요청 형식이 올바르지 않습니다.&quot;,
+  &quot;fieldErrors&quot;: [ { &quot;field&quot;: &quot;company.businessRegistrationNumber&quot;, &quot;code&quot;: &quot;FORMAT&quot; } ],
+  &quot;traceId&quot;: &quot;7f0c2b6e-1d2a-4f61-9a3e-2b9d8c4e5a10&quot;
+}
+</code></pre>
+<p>그 밖의 오류의 예:</p>
+<pre><code class="language-json">{
+  &quot;statusCode&quot;: 409,
+  &quot;errorCode&quot;: &quot;EXTERNAL_ORDER_CONFLICT&quot;,
+  &quot;message&quot;: &quot;같은 신청 번호로 다른 내용이 이미 접수되어 있습니다.&quot;,
+  &quot;fieldErrors&quot;: [],
+  &quot;traceId&quot;: &quot;7f0c2b6e-1d2a-4f61-9a3e-2b9d8c4e5a10&quot;
+}
+</code></pre>
+<ul>
+<li>분기에는 <code>errorCode</code>를 쓰세요. <code>message</code>는 한국어 문장이며 바뀔 수 있습니다.</li>
+<li><code>fieldErrors</code>는 입력 오류(<code>400</code>)일 때만 채워집니다. <code>field</code>는 <code>member.email</code>·<code>product.name</code>처럼 점으로 잇고, 여러 부분 요청 자체의 문제면 부분 이름(<code>data</code>, <code>businessRegistrationCertificate</code>, <code>photos</code>)입니다. 보내 주신 값은 응답에 담지 않습니다.</li>
+<li>이 API가 처리하기 전 단계에서 걸러지는 요청은 위 모양이 아닐 수 있습니다(<code>traceId</code>·<code>X-Trace-Id</code>가 없을 수 있음). 예: 이 문서에 <strong>없는 경로</strong>로 보낸 요청, <code>Content-Type: application/json</code>인데 깨진 본문. 이런 응답은 HTTP 상태 코드로만 판단해 주세요. 회원·업체 등록과 등록 확인 두 경로는 <code>multipart/form-data</code>(등록)·GET(확인)으로 부르시면 해당 없습니다.</li>
+<li><code>fieldErrors[].code</code>: <code>REQUIRED</code>(비었거나 없음), <code>FORMAT</code>(형식이 맞지 않음), <code>MAX_LENGTH</code>(너무 김), <code>TYPE</code>(종류가 다름), <code>ONE_OF</code>(허용된 값이 아님), <code>INVALID</code>(그 밖의 맞지 않음).</li>
+</ul>
+<h3 id="s7-2">7-2. 오류 코드</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>HTTP</th>
+<th><code>errorCode</code></th>
+<th>나오는 곳</th>
+<th>언제</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>400</td>
+<td><code>VALIDATION_FAILED</code></td>
+<td>등록·신청·조회</td>
+<td>칸·쿼리 규칙 위반. 아래 7-3</td>
+</tr>
+<tr>
+<td>400</td>
+<td><code>TOO_MANY_IDS</code></td>
+<td>조회(묶음)</td>
+<td>묶음에서 중복을 뺀 번호가 50개 초과. 사용한 쿼리에 따라 <code>fieldErrors</code>는 <code>ids / INVALID</code> 또는 <code>externalOrderIds / INVALID</code>입니다</td>
+</tr>
+<tr>
+<td>400</td>
+<td><code>INVALID_CURSOR</code></td>
+<td>조회(목록)</td>
+<td>목록에서 길이·NUL 검사를 통과한 <code>after</code>를 해석할 수 없음. <code>fieldErrors</code>는 <code>after / INVALID</code>입니다</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>OPEN_API_KEY_REQUIRED</code></td>
+<td>공통</td>
+<td><code>x-api-key</code> 머리글이 없거나 비어 있음</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>OPEN_API_KEY_INVALID</code></td>
+<td>공통</td>
+<td>키가 유효하지 않거나 폐기됨</td>
+</tr>
+<tr>
+<td>403</td>
+<td><code>PARTNER_UNAVAILABLE</code></td>
+<td>등록·신청</td>
+<td>이 연동 서비스로 지금 새 등록 또는 새 신청을 받을 수 없음</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>MEMBER_NOT_FOUND</code></td>
+<td>등록 확인</td>
+<td>번호가 UUID 형식이 아니거나, 없거나, 다른 연동 서비스의 번호</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>APPLICATION_NOT_FOUND</code></td>
+<td>조회(건별)</td>
+<td>번호가 UUID 형식이 아니거나, 없거나, 다른 연동 서비스의 신청</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>PARTNER_API_DISABLED</code></td>
+<td>공통</td>
+<td>파트너 API가 꺼진 환경</td>
+</tr>
+<tr>
+<td>404</td>
+<td>(모양이 다를 수 있음)</td>
+<td>공통</td>
+<td>이 문서에 없는 경로 — 7-1의 셋째 항목처럼 HTTP 상태로 판단</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>EXTERNAL_ORDER_CONFLICT</code></td>
+<td>신청</td>
+<td>같은 <code>externalOrderId</code>로 다른 내용이 이미 접수되어 있음(4-4)</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>MEMBER_REVIEW_REQUIRED</code></td>
+<td>신청</td>
+<td>이 <code>memberId</code>의 등록으로는 지금 신청을 접수할 수 없어 담당자 확인이 필요함(4-5)</td>
+</tr>
+<tr>
+<td>413</td>
+<td><code>FILE_TOO_LARGE</code></td>
+<td>등록·신청</td>
+<td>등록은 사업자등록증 파일이 10MB 초과, 신청은 사진 한 장이 10MB 초과</td>
+</tr>
+<tr>
+<td>429</td>
+<td><code>OPEN_API_RATE_LIMIT_EXCEEDED</code></td>
+<td>공통</td>
+<td>분당 한도 초과(<code>Retry-After</code> 있음)</td>
+</tr>
+<tr>
+<td>429</td>
+<td><code>OPEN_API_DAILY_QUOTA_EXCEEDED</code></td>
+<td>공통</td>
+<td>하루 한도 초과</td>
+</tr>
+<tr>
+<td>429</td>
+<td><code>OPEN_API_AUTH_ATTEMPTS_EXCEEDED</code></td>
+<td>공통</td>
+<td>키 없는·잘못된 키 요청 반복(<code>Retry-After</code> 있음)</td>
+</tr>
+<tr>
+<td>500</td>
+<td><code>INTERNAL_SERVER_ERROR</code></td>
+<td>공통</td>
+<td>서버 내부 오류. 회원·업체 등록은 같은 요청을 다시 보내셔도 되고(3-5), 인증 신청은 같은 내용 그대로 다시 보내셔도 됩니다(4-4)</td>
+</tr>
+<tr>
+<td>503</td>
+<td><code>OPEN_API_RATE_LIMIT_UNAVAILABLE</code>, <code>SERVICE_UNAVAILABLE</code></td>
+<td>공통</td>
+<td>일시적으로 처리할 수 없음. 잠시 뒤 다시 시도해 주세요</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><strong>다시 시도해도 되는 오류</strong>: <code>429</code>, <code>500</code>, <code>503</code>, 그리고 네트워크 오류·시간 초과. 인증 신청은 같은 <code>externalOrderId</code>·같은 내용으로 다시 보내면 중복 접수가 생기지 않습니다(4-4). 회원·업체 등록은 응답이 끊겨 결과를 모를 때 그대로 다시 보내셔도 됩니다(3-5).</li>
+</ul>
+<h3 id="s7-3">7-3. 입력 오류(<code>400 VALIDATION_FAILED</code>)의 <code>fieldErrors</code></h3>
+<p><strong>회원·업체 등록</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>경우</th>
+<th><code>field</code> / <code>code</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>multipart/form-data</code>가 아닌 요청</td>
+<td><code>data</code> / <code>REQUIRED</code></td>
+</tr>
+<tr>
+<td><code>data</code> 부분이 없거나 비어 있음</td>
+<td><code>data</code> / <code>REQUIRED</code></td>
+</tr>
+<tr>
+<td><code>data</code>가 JSON 객체가 아님(깨진 JSON 포함)</td>
+<td><code>data</code> / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td><code>data</code>가 65,536바이트(UTF-8) 초과</td>
+<td><code>data</code> / <code>MAX_LENGTH</code></td>
+</tr>
+<tr>
+<td>글자 부분이 2개 이상(이름과 상관없이)</td>
+<td><code>data</code> / <code>INVALID</code></td>
+</tr>
+<tr>
+<td>파일 부분이 2개 이상(이름과 상관없이)</td>
+<td><code>businessRegistrationCertificate</code> / <code>INVALID</code></td>
+</tr>
+<tr>
+<td>개수는 맞는데 이름이 다른 부분(글자 1개 또는 파일 1개)</td>
+<td>그 부분 이름(앞 100자) / <code>INVALID</code></td>
+</tr>
+<tr>
+<td>사업자등록증 내용이 PDF·JPG·PNG가 아님</td>
+<td><code>businessRegistrationCertificate</code> / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td>칸이 없음·비었음</td>
+<td>그 칸 / <code>REQUIRED</code></td>
+</tr>
+<tr>
+<td>칸이 문자열·객체가 아님</td>
+<td>그 칸 / <code>TYPE</code></td>
+</tr>
+<tr>
+<td>길이 초과</td>
+<td>그 칸 / <code>MAX_LENGTH</code></td>
+</tr>
+<tr>
+<td>이메일·휴대폰·사업자등록번호·시각 형식이 맞지 않음</td>
+<td>그 칸 / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td>우편번호가 5자 미만</td>
+<td><code>company.postalCode</code> / <code>INVALID</code></td>
+</tr>
+</tbody></table></div>
+<p><strong>인증 신청</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>경우</th>
+<th><code>field</code> / <code>code</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>multipart/form-data</code>가 아닌 요청(JSON 본문 포함)</td>
+<td><code>data</code> / <code>REQUIRED</code></td>
+</tr>
+<tr>
+<td><code>data</code> 부분이 없거나 비어 있음</td>
+<td><code>data</code> / <code>REQUIRED</code></td>
+</tr>
+<tr>
+<td><code>data</code>가 JSON 객체가 아님(깨진 JSON 포함)</td>
+<td><code>data</code> / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td><code>data</code>가 65,536바이트(UTF-8) 초과</td>
+<td><code>data</code> / <code>MAX_LENGTH</code></td>
+</tr>
+<tr>
+<td>글자 부분이 2개 이상(이름과 상관없이)</td>
+<td><code>data</code> / <code>INVALID</code></td>
+</tr>
+<tr>
+<td>사진이 한 장도 없음</td>
+<td><code>photos</code> / <code>REQUIRED</code></td>
+</tr>
+<tr>
+<td>파일 부분이 6개 이상(이름과 상관없이)</td>
+<td><code>photos</code> / <code>INVALID</code></td>
+</tr>
+<tr>
+<td>개수는 맞는데 이름이 다른 부분(글자 1개, 또는 파일)</td>
+<td>그 부분 이름(앞 100자) / <code>INVALID</code></td>
+</tr>
+<tr>
+<td>사진 내용이 JPG·PNG가 아님(PDF·GIF 등)</td>
+<td><code>photos</code> / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td>칸이 없음·비었음</td>
+<td>그 칸 / <code>REQUIRED</code></td>
+</tr>
+<tr>
+<td>칸이 문자열·객체가 아님</td>
+<td>그 칸 / <code>TYPE</code></td>
+</tr>
+<tr>
+<td>길이 초과</td>
+<td>그 칸 / <code>MAX_LENGTH</code></td>
+</tr>
+<tr>
+<td><code>externalOrderId</code>에 쉼표가 있음</td>
+<td><code>externalOrderId</code> / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td><code>product.linkUrl</code>이 <code>http://</code>·<code>https://</code> 주소가 아님</td>
+<td><code>product.linkUrl</code> / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td>칸에 NUL 문자가 있음</td>
+<td>그 칸 / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td>새 신청에서 <code>memberId</code>가 UUID 형식이 아니거나, 없는 등록이거나, 다른 연동 서비스의 등록</td>
+<td><code>memberId</code> / <code>INVALID</code></td>
+</tr>
+</tbody></table></div>
+<p><strong>신청 조회</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>경우</th>
+<th><code>field</code> / <code>code</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ids</code>와 <code>externalOrderIds</code>를 함께 보냄</td>
+<td><code>externalOrderIds</code> / <code>INVALID</code></td>
+</tr>
+<tr>
+<td><code>ids</code>가 4,000자 초과, <code>externalOrderIds</code>가 6,000자 초과, <code>after</code>가 200자 초과</td>
+<td>그 쿼리 / <code>MAX_LENGTH</code></td>
+</tr>
+<tr>
+<td><code>ids</code>·<code>externalOrderIds</code>·<code>after</code>에 NUL 문자가 있음</td>
+<td>그 쿼리 / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td><code>limit</code>이 숫자 1~6자리가 아님</td>
+<td><code>limit</code> / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td><code>state</code>가 <code>open</code>이 아님</td>
+<td><code>state</code> / <code>ONE_OF</code></td>
+</tr>
+<tr>
+<td>묶음·목록에서 <code>updatedSince</code> 문자열이 2-2에 적힌 형식과 다름</td>
+<td><code>updatedSince</code> / <code>FORMAT</code></td>
+</tr>
+<tr>
+<td>목록에서만 <code>updatedSince</code>의 연도가 범위를 벗어나거나 실제로 없는 날짜·시각임</td>
+<td><code>updatedSince</code> / <code>FORMAT</code></td>
+</tr>
+</tbody></table></div>
+<h3 id="s7-4">7-4. 오류가 겹칠 때 어느 것이 먼저인가 (인증 신청)</h3>
+<p>아래는 현재 처리 단계입니다. 한 단계에서 여러 조건을 어기면 그중 어떤 오류를 먼저 받을지는 보장하지 않습니다.</p>
+<ol>
+<li>본문을 읽기 전에 키·호출 한도와 API 사용 가능 여부를 확인합니다. <code>401</code>, <code>429</code>, 한도 확인 장애의 <code>503</code>, API가 꺼진 환경의 <code>404</code>가 이때 나올 수 있습니다.</li>
+<li>요청 모양, 사진 장수·크기·형식, <code>data</code>의 필수 칸·종류·길이·문자 규칙을 검사합니다. <code>memberId</code>도 이때 빈 값·길이·NUL을 검사합니다. 입력 오류는 <code>400</code>, 사진 크기 초과는 <code>413</code>입니다.</li>
+<li>같은 <code>externalOrderId</code>의 신청이 이미 있는지 확인 → 있으면 여기서 끝납니다. 같은 내용이면 처음 응답(<code>200</code>), 다른 내용이면 <code>409 EXTERNAL_ORDER_CONFLICT</code>.</li>
+<li>연동 서비스가 새 신청을 받을 수 있는지 → <code>403 PARTNER_UNAVAILABLE</code>.</li>
+<li>새 신청의 <code>memberId</code>가 UUID이고 같은 연동 서비스에 등록된 번호인지 확인합니다. 맞지 않으면 <code>400</code>(<code>memberId</code> / <code>INVALID</code>), 담당자 확인이 필요하면 <code>409 MEMBER_REVIEW_REQUIRED</code>입니다.</li>
+<li>사진 저장과 접수 → <code>200</code>.</li>
+</ol>
+<ul>
+<li>예를 들어 이미 접수한 번호로 다시 보낼 때 <code>memberId</code>가 비면 <code>400 REQUIRED</code>, 100자를 넘으면 <code>400 MAX_LENGTH</code>입니다(둘 다 <code>VALIDATION_FAILED</code>의 칸별 오류). 반면 다른 짧은 문자열을 넣고 2번을 통과하면, UUID 형식을 확인하기 전에 내용 차이로 <code>409 EXTERNAL_ORDER_CONFLICT</code>가 나옵니다.</li>
+</ul>
+<h2 id="s8">8. 변경 이력</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>판</th>
+<th>날짜</th>
+<th>달라진 점</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>제1판</td>
+<td>2026-11-19</td>
+<td>첫 판. 회원·업체 등록, 등록 확인, 인증 신청, 신청 조회(건별·묶음·전체 재대조 목록) 규격을 실었습니다. 발급 문서 내려받기·웹훅·정산은 준비 중입니다</td>
+</tr>
+</tbody></table></div>
+
+  </main>
+</div>
+</body>
+</html>
