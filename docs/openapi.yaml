@@ -36,6 +36,9 @@ paths:
         그 요청의 내용(필수 칸을 갖춘 data + 사업자등록증)으로 같은 memberId에서 처음부터 처리합니다. 이 경우 연동 서비스가
         새 등록을 받을 수 없는 상태면 403 PARTNER_UNAVAILABLE입니다.
         status는 보낸 내용(사업자등록증이 있는지)으로만 정해집니다.
+        memberId는 사용자 한 명마다 하나가 아니라 (회원 이메일, 업체 사업자등록번호) 한 쌍마다 하나입니다. 한 사람이 업체 두 곳으로
+        등록하면 memberId도 두 개이므로, 연동사 쪽에서는 이 쌍 단위로 저장해 주세요.
+        신청자가 그 업체 소속인지와 그 이메일의 주인인지는 연동사가 확인한 뒤 보내 주세요.
 
         이 파일이 표현하지 못하는 서버 규칙(최종 판단은 서버):
         - data는 문자열로 보내는 JSON이라, 그 안의 규격(RegisterMemberData)은 표준 검사·코드 생성 도구가
@@ -234,6 +237,7 @@ paths:
       description: |
         ids 또는 externalOrderIds를 보내면 묶음 조회(최대 50건, 응답 ApplicationBatch)이고,
         둘 다 없으면 전체 재대조 목록(쪽 단위, 응답 ApplicationPage)입니다. 같은 연동 서비스로 보낸 신청만 보입니다.
+        조회 범위는 연동 서비스 전체입니다. workspaceId로 나눠 보여 주지 않으므로, 워크스페이스별 접근 제어는 연동사가 합니다.
 
         묶음 조회: ids와 externalOrderIds를 함께 보내면 400 VALIDATION_FAILED(externalOrderIds / INVALID).
         중복을 뺀 개수가 50건을 넘으면 400 TOO_MANY_IDS. 없는 신청·다른 연동 서비스의 신청·UUID가 아닌 ids
@@ -508,7 +512,7 @@ components:
           minLength: 1
           maxLength: 100
           pattern: '^[^,]*$'
-          description: 연동사가 정하는 신청 번호. 쉼표는 쓸 수 없습니다. 같은 신청을 다시 보낼 때의 기준
+          description: 연동사가 정하는 신청 번호. 쉼표는 쓸 수 없습니다. 같은 신청을 다시 보낼 때의 기준. 연동 서비스 전체에서 유일해야 합니다(워크스페이스 안에서만 유일하면 안 됨)
           example: ORDER-0001
         memberId:
           type: string
@@ -520,7 +524,7 @@ components:
           type: string
           nullable: true
           maxLength: 100
-          description: 연동사 쪽 워크스페이스 구분값
+          description: 연동사 쪽 워크스페이스 구분값. 재전송의 같은 내용 비교에 포함됩니다. 조회 범위를 나누는 데는 쓰지 않습니다
           example: ws-test-01
         product:
           type: object
@@ -761,6 +765,8 @@ components:
       description: |
         EXTERNAL_ORDER_CONFLICT — 같은 externalOrderId로 다른 내용이 이미 접수되어 있음.
         MEMBER_REVIEW_REQUIRED — 이 memberId의 등록으로는 지금 신청을 접수할 수 없어 담당자 확인이 필요함.
+        같은 요청을 자동으로 다시 보내도 풀리지 않으므로 자동으로 다시 시도하지 마세요. 등록 상태가 review_required이면 사업자등록증을 실어
+        등록을 다시 보낸 뒤 신청하고, 그 밖의 경우에는 traceId와 함께 문의해 주세요.
       headers:
         X-Trace-Id:
           $ref: "#/components/headers/TraceId"

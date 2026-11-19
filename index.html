@@ -392,6 +392,7 @@
 <li>다시 보낸 요청도 <strong>3-1·3-2 규칙을 모두 통과해야</strong> 같은 등록으로 확인합니다. 규칙에 맞지 않으면 기존 등록과 상관없이 입력 오류는 <code>400</code> <code>VALIDATION_FAILED</code>, 사업자등록증 파일 크기 초과는 <code>413</code> <code>FILE_TOO_LARGE</code>입니다.</li>
 <li>예외 하나: 처음 등록이 <code>review_required</code>(파일 없음)였다면, 사업자등록증을 실어 다시 보낸 그 요청의 내용(필수 칸을 갖춘 <code>data</code> + 사업자등록증)으로 같은 <code>memberId</code>에서 처음부터 처리합니다. 이때는 새 처리이므로, 연동 서비스가 지금 새 등록을 받을 수 없는 상태면 <code>403</code> <code>PARTNER_UNAVAILABLE</code>입니다(이미 처리가 끝난 등록을 그대로 다시 보낸 경우는 처음 결과를 돌려줍니다).</li>
 <li>이메일이나 사업자등록번호가 다르면 다른 등록입니다. 한 사람이 여러 업체를 등록하거나 한 업체에 여러 사람을 등록할 수 있습니다.</li>
+<li>그래서 <code>memberId</code>는 사용자 한 명마다 하나가 아니라 <strong>(회원 이메일, 업체 사업자등록번호) 한 쌍마다 하나</strong>입니다. 한 사람이 업체 두 곳으로 등록하면 <code>memberId</code>도 두 개입니다. 연동사 쪽에서는 <code>memberId</code>를 이 쌍 단위로 저장해 주세요.</li>
 </ul>
 <h3 id="s3-6">3-6. 회원·업체는 이렇게 처리됩니다</h3>
 <ul>
@@ -563,6 +564,7 @@
 <h3 id="s4-4">4-4. 같은 <code>externalOrderId</code>로 다시 보내면</h3>
 <ul>
 <li><strong>같은 연동 서비스 + 같은 <code>externalOrderId</code></strong> 면 같은 신청으로 봅니다. 기준은 키 값이 아니라 키가 속한 연동 서비스라서, 키를 바꿔 발급받아도 같은 신청으로 이어집니다.</li>
+<li>그래서 <code>externalOrderId</code>는 <strong>연동 서비스 전체에서 유일</strong>해야 합니다. 워크스페이스 안에서만 유일한 번호를 쓰면 안 됩니다. <code>workspaceId</code>가 달라도 <code>externalOrderId</code>가 같으면 같은 신청으로 보고, <code>workspaceId</code>도 <code>data</code>의 칸이라 값이 다르면 다른 내용(<code>409</code>)이 됩니다.</li>
 <li><strong>같은 내용</strong>이면 처음 받은 응답(같은 <code>applicationId</code>·같은 <code>receivedAt</code>, <code>status</code>는 <code>received</code>)을 그대로 돌려주고, 사진을 다시 저장하지 않습니다. 응답이 끊겨 결과를 모를 때는 <strong>같은 내용 그대로</strong> 다시 보내셔도 중복 접수가 생기지 않습니다.</li>
 <li><strong>다른 내용</strong>이면 <code>409</code> <code>EXTERNAL_ORDER_CONFLICT</code>이고, 처음 접수한 신청은 바뀌지 않습니다. 내용을 바꾸려면 새 <code>externalOrderId</code>로 보내 주세요.</li>
 <li>&quot;같은 내용&quot;은 <strong><code>data</code>의 칸 값(앞뒤 공백을 지운 값)</strong> 과 <strong>사진 파일의 내용·보낸 순서</strong>로 판단합니다. 사진 한 장의 내용이 다르거나, 순서나 장수가 다르면 다른 내용입니다. 사진 파일 이름과 <code>Content-Type</code>은 보지 않습니다. <code>memberId</code>는 대소문자 구분 없이 비교합니다.<ul>
@@ -603,6 +605,9 @@
 <td>모두의인증에 문의해 주세요</td>
 </tr>
 </tbody></table></div>
+<ul>
+<li><code>409</code> <code>MEMBER_REVIEW_REQUIRED</code>는 같은 요청을 자동으로 다시 보내도 풀리지 않습니다. 자동으로 다시 시도하지 마세요. 그 <code>memberId</code>의 등록 상태가 <code>review_required</code>(3-4, 등록 확인으로 볼 수 있음)이면 사업자등록증을 실어 등록을 다시 보낸 뒤 신청해 주세요. 그 밖의 경우에는 응답의 <code>traceId</code>와 함께 문의해 주세요.</li>
+</ul>
 <h3 id="s4-6">4-6. 요청 예시</h3>
 <pre><code class="language-bash">curl -X POST &quot;$MODUCERTI_API_BASE/partner/v1/applications&quot; \
   -H &quot;x-api-key: $MODUCERTI_PARTNER_KEY&quot; \
@@ -618,6 +623,7 @@
 </ul>
 <h2 id="s5">5. 신청 조회</h2>
 <p>조회는 읽기 전용이고, 같은 연동 서비스로 보낸 신청만 보입니다. 응답 칸은 세 조회가 같습니다.</p>
+<p>조회 범위는 연동 서비스 전체입니다. <code>workspaceId</code>로 나눠 보여 주지 않으므로, 워크스페이스별 접근 제어는 연동사가 합니다.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -1176,6 +1182,11 @@ curl &quot;$MODUCERTI_API_BASE/partner/v1/applications?limit=1&amp;after=&lt;nex
 <td>제1판</td>
 <td>2026-11-19</td>
 <td>첫 판. 회원·업체 등록, 등록 확인, 인증 신청, 신청 조회(건별·묶음·전체 재대조 목록) 규격을 실었습니다. 발급 문서 내려받기·웹훅·정산은 준비 중입니다</td>
+</tr>
+<tr>
+<td>제1판(설명 보탬)</td>
+<td>2026-11-19</td>
+<td>규격은 그대로이고 설명을 보탰습니다. <code>memberId</code>는 (이메일, 사업자등록번호) 한 쌍마다 하나(3-5), <code>externalOrderId</code>는 연동 서비스 전체에서 유일(4-4), <code>409 MEMBER_REVIEW_REQUIRED</code>를 받았을 때 할 일(4-5), 조회 범위와 워크스페이스(5절)</td>
 </tr>
 </tbody></table></div>
 
