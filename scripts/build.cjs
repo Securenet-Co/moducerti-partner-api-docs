@@ -12,7 +12,7 @@ const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, 
 const plain = (html) => html.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
 
 const TITLE = "모두의인증 연동 API 문서";
-const CSP_GUIDE = "default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'";
+const CSP_GUIDE = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'";
 // Redoc 은 화면을 그리며 style 태그를 만들고 검색용 작업 스레드를 blob 으로 띄운다. 밖으로 나가는 요청은 모두 막는다.
 const CSP_API = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; worker-src blob:; child-src blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
 
@@ -21,8 +21,8 @@ const CSP_API = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe
 // 문서를 다른 곳으로 옮기면 이 주소 하나만 고친다.
 const OPENAPI_VIEW_URL = "https://raw.githubusercontent.com/Securenet-Co/moducerti-partner-api-docs/main/docs/openapi.yaml";
 const openapiLinks = (prefix) =>
-  `<a href="${prefix}docs/openapi.yaml" download="openapi.yaml">OpenAPI 파일 받기</a>
-    <a href="${OPENAPI_VIEW_URL}" rel="noopener noreferrer">OpenAPI 파일 보기</a>`;
+  `<a href="${prefix}docs/openapi.yaml" download="openapi.yaml">OpenAPI 받기</a>
+    <a href="${OPENAPI_VIEW_URL}" rel="noopener noreferrer">OpenAPI 보기</a>`;
 
 const topBar = (prefix, current) => `<header class="top">
   <a class="brand" href="${prefix}index.html">${TITLE}</a>
@@ -31,7 +31,8 @@ const topBar = (prefix, current) => `<header class="top">
     <a href="${prefix}api/index.html"${current === "api" ? ' aria-current="page"' : ""}>API 참조</a>
     ${openapiLinks(prefix)}
   </nav>
-</header>`;
+</header>
+<script src="${prefix}assets/site.js"></script>`;
 
 // ---- 안내서 ----
 const md = read("docs/moducerti-partner-api.md");

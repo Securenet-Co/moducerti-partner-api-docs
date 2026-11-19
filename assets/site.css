@@ -9,6 +9,8 @@
   --code-bg: #eff2f5;
   --sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  /* 화면 위에 고정된 맨 위 줄의 높이. assets/site.js 가 실제 높이를 재서 덮어쓴다(스크립트가 꺼져 있으면 이 값을 쓴다). */
+  --top-h: 52px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,8 +42,11 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3
 h1, h2, h3, h4 { text-wrap: balance; line-height: 1.35; }
 p, li { text-wrap: pretty; }
 
-/* 맨 위 줄 */
+/* 맨 위 줄: 스크롤해도 화면 위에 남는다 */
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -67,9 +72,9 @@ p, li { text-wrap: pretty; }
 }
 .toc {
   position: sticky;
-  top: 0;
+  top: var(--top-h);
   align-self: start;
-  max-height: 100vh;
+  max-height: calc(100vh - var(--top-h));
   overflow-y: auto;
   padding: 16px 0;
   font-size: 14px;
@@ -87,7 +92,7 @@ p, li { text-wrap: pretty; }
 .doc h1 { font-size: 30px; margin: 8px 0 16px; }
 .doc h2 { font-size: 23px; margin: 56px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
 .doc h3 { font-size: 18px; margin: 36px 0 12px; }
-.doc h1, .doc h2, .doc h3 { scroll-margin-top: 16px; } /* 목차에서 눌러 왔을 때 제목이 화면 맨 위에 붙지 않게 */
+.doc h1, .doc h2, .doc h3 { scroll-margin-top: calc(var(--top-h) + 8px); } /* 목차에서 눌러 왔을 때 제목이 고정된 맨 위 줄 바로 아래에 오게 */
 .doc p { margin: 12px 0; }
 .doc ul, .doc ol { margin: 12px 0; padding-left: 22px; }
 .doc li { margin: 6px 0; }
@@ -141,6 +146,7 @@ p, li { text-wrap: pretty; }
 
 /* 좁은 화면 */
 @media (max-width: 900px) {
+  :root { --top-h: 72px; }
   .layout { display: block; padding: 16px 16px 72px; }
   .toc {
     position: static;
@@ -153,7 +159,8 @@ p, li { text-wrap: pretty; }
   }
   .toc-l3 { display: none; }
   .toc-l2 a { margin-top: 0; font-weight: 500; }
-  .top { padding: 10px 16px; }
+  .top { padding: 8px 16px; gap: 2px 24px; }
+  .top-nav { font-size: 14px; gap: 2px 14px; }
   .doc h1 { font-size: 25px; margin-top: 28px; }
   .doc h2 { font-size: 21px; margin-top: 44px; }
   .doc table { min-width: 560px; }

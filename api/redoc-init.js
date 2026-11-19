@@ -24,9 +24,17 @@
     server.description = (server.description || "") + " (아래 주소는 자리 값)";
   });
 
+  // 맨 위 줄이 화면 위에 고정돼 있으므로, 메뉴를 눌러 이동하는 위치와 "지금 보는 구역" 판정 기준선을 그 높이만큼 내린다.
+  // 왼쪽 메뉴가 붙는 위치도 Redoc 이 이 값으로 정한다. 좁은 화면에서는 높이가 달라져서 숫자를 박지 않고 그때그때 잰다.
+  var header = document.querySelector("header.top");
+  function headerHeight() {
+    return header ? Math.ceil(header.getBoundingClientRect().height) : 0;
+  }
+
   Redoc.init(
     spec,
     {
+      scrollYOffset: headerHeight,
       hideDownloadButton: true,
       nativeScrollbars: true,
       expandResponses: "200",
