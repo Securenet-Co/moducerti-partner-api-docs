@@ -1,11 +1,13 @@
 openapi: 3.0.3
 info:
   title: 모두의인증 연동 API
-  version: "v1-ed1-2026-11-19"
+  version: "v1-ed2-2026-11-21"
   description: |
-    모두의인증 연동 API 규격 제1판(2026-11-19)입니다. 회원·업체 등록, 등록 확인, 인증 신청, 신청 조회를 담았습니다.
+    모두의인증 연동 API 규격 제2판(2026-11-21)입니다. 회원·업체 등록, 등록 확인, 인증 신청, 신청 조회를 담았습니다.
+    제2판에서 등록 status가 registered·certificate_required·on_hold 세 가지가 되었습니다.
+    제1판의 review_required는 certificate_required로 이름이 바뀌었습니다(뜻은 같음).
     발급 문서 내려받기·웹훅·정산은 준비 중이며, 열리는 대로 이 파일의 다음 판에 이어 붙입니다.
-    같은 판의 안내 문서(모두의인증 연동 API 문서, 제1판)와 내용이 같습니다.
+    같은 판의 안내 문서(모두의인증 연동 API 문서, 제2판)와 내용이 같습니다.
 servers:
   - url: "{baseUrl}"
     description: 안내받은 환경 주소. 주소는 연동사마다 따로 안내합니다
@@ -32,10 +34,20 @@ paths:
         status를 그대로 돌려줍니다(다른 칸·파일은 바꾸지 않음). 다시 보낸 요청도 입력 규칙을 모두
         통과해야 하며, 맞지 않으면 기존 등록과 상관없이 입력 오류는 400 VALIDATION_FAILED,
         사업자등록증 파일 크기 초과는 413 FILE_TOO_LARGE입니다.
-        단 처음 등록이 review_required(사업자등록증 없음)였다면, 사업자등록증을 실어 다시 보낸
-        그 요청의 내용(필수 칸을 갖춘 data + 사업자등록증)으로 같은 memberId에서 처음부터 처리합니다. 이 경우 연동 서비스가
-        새 등록을 받을 수 없는 상태면 403 PARTNER_UNAVAILABLE입니다.
-        status는 보낸 내용(사업자등록증이 있는지)으로만 정해집니다.
+        on_hold인 등록을 다시 보내면 처리하지 않고 같은 status·holdReason·message를 그대로 돌려줍니다(파일을 실어도 저장하지 않음).
+        예외 둘: 처음 등록이 certificate_required(사업자등록증 없음)였고 사업자등록증을 실어 다시 보낸 경우, 그리고 registered인데
+        이어져 있던 회원 또는 업체가 모두의인증에서 삭제된 경우(파일 없이 보내면 certificate_required로 돌아감)에는 그 요청의
+        내용(필수 칸을 갖춘 data + 사업자등록증)으로 같은 memberId에서 처음부터 새로 처리하고 결과는 세 상태 중 하나입니다.
+        이 경우 연동 서비스가 새 등록을 받을 수 없는 상태면 403 PARTNER_UNAVAILABLE입니다.
+
+        status는 세 가지입니다. registered(등록이 끝남. 인증 신청 때 이어진 회원·업체를 다시 확인해 통과하면 접수, 아니면 409),
+        certificate_required(사업자등록증 파일이 없어 멈춤. 제1판의 review_required), on_hold(모두의인증 담당자 확인 중.
+        이때만 holdReason과 고정 message가 실리고 신청은 409 MEMBER_REVIEW_REQUIRED). 모두의인증에 이미 있는 회원·업체의
+        구체적인 상태는 응답에 나오지 않습니다.
+        승인 대기 직원 가입 요청은 사업자등록증을 실어 보낸 등록이 기존 승인 업체에 이어져 registered로 끝날 때, 또는 담당자가
+        on_hold를 풀면서 기존 업체에 이어 줄 때, 그 업체에 신청자의 직원 정보가 없으면 생깁니다(이미 직원이면 그대로).
+        certificate_required(사업자등록증 없음)는 업체를 이어 붙이지 않으므로 생기지 않습니다. 업체 마스터가 승인하기 전에는 그 업체의 권한이 없습니다.
+        가입 상태 변경 알림(웹훅)은 추후 제공 예정입니다. 그 전에는 등록 확인(GET)으로 확인해 주세요.
         memberId는 사용자 한 명마다 하나가 아니라 (회원 이메일, 업체 사업자등록번호) 한 쌍마다 하나입니다. 한 사람이 업체 두 곳으로
         등록하면 memberId도 두 개이므로, 연동사 쪽에서는 이 쌍 단위로 저장해 주세요.
         신청자가 그 업체 소속인지와 그 이메일의 주인인지는 연동사가 확인한 뒤 보내 주세요.
@@ -65,7 +77,7 @@ paths:
                   format: binary
                   description: |
                     사업자등록증 파일 1개. PDF·JPG·PNG, 10MB(10,485,760바이트) 이하.
-                    형식은 파일 내용(시그니처)으로 확인합니다. 없으면 status가 review_required입니다.
+                    형식은 파일 내용(시그니처)으로 확인합니다. 없으면 status가 certificate_required입니다.
             encoding:
               data:
                 contentType: text/plain; charset=utf-8
@@ -78,11 +90,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MemberReceipt"
-              example:
-                statusCode: 200
-                memberId: b3a1c0de-0000-4000-8000-000000000001
-                status: registered
-                registeredAt: "2026-11-19T03:15:00.000Z"
+              examples:
+                registered:
+                  summary: 등록이 끝남
+                  value:
+                    statusCode: 200
+                    memberId: b3a1c0de-0000-4000-8000-000000000001
+                    status: registered
+                    registeredAt: "2026-11-21T03:15:00.000Z"
+                certificateRequired:
+                  summary: 사업자등록증 파일이 없어 멈춤
+                  value:
+                    statusCode: 200
+                    memberId: b3a1c0de-0000-4000-8000-000000000002
+                    status: certificate_required
+                    registeredAt: "2026-11-21T03:15:00.000Z"
+                onHold:
+                  summary: 모두의인증 담당자 확인 중 — 사업자 정보(holdReason·message는 이때만). 아래 등록 확인(GET) 예시의 onHold와 같은 등록입니다
+                  value:
+                    statusCode: 200
+                    memberId: b3a1c0de-0000-4000-8000-000000000003
+                    status: on_hold
+                    registeredAt: "2026-11-21T03:15:00.000Z"
+                    holdReason: COMPANY_UNAVAILABLE
+                    message: 입력하신 사업자 정보는 모두의인증 확인이 필요합니다. 사업자등록번호를 확인하시거나 고객센터로 문의해 주세요.
+                onHoldAccount:
+                  summary: 모두의인증 담당자 확인 중 — 이메일 계정(다른 등록)
+                  value:
+                    statusCode: 200
+                    memberId: b3a1c0de-0000-4000-8000-000000000004
+                    status: on_hold
+                    registeredAt: "2026-11-21T03:15:00.000Z"
+                    holdReason: ACCOUNT_UNAVAILABLE
+                    message: 입력하신 이메일 계정은 모두의인증 확인이 필요합니다. 이메일을 확인하시거나 고객센터로 문의해 주세요.
         "400":
           $ref: "#/components/responses/MemberValidationFailed"
         "401":
@@ -104,6 +144,10 @@ paths:
       tags: [members]
       operationId: getMember
       summary: 등록 확인
+      description: |
+        등록 응답과 같은 status·holdReason·message(on_hold일 때만)에 statusChangedAt이 더해집니다.
+        담당자가 on_hold를 풀면 registered로 바뀌고 holdReason·message 칸이 사라집니다.
+        등록한 뒤에 이어진 회원·업체의 상태가 바뀌어도 이 값은 따라 바뀌지 않으며, 그 경우 신청 때 다시 확인에서 막히면 409입니다.
       parameters:
         - name: memberId
           in: path
@@ -118,12 +162,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MemberView"
-              example:
-                statusCode: 200
-                memberId: b3a1c0de-0000-4000-8000-000000000001
-                status: registered
-                registeredAt: "2026-11-19T03:15:00.000Z"
-                statusChangedAt: "2026-11-19T03:20:00.000Z"
+              examples:
+                registered:
+                  summary: 등록이 끝남
+                  value:
+                    statusCode: 200
+                    memberId: b3a1c0de-0000-4000-8000-000000000001
+                    status: registered
+                    registeredAt: "2026-11-21T03:15:00.000Z"
+                    statusChangedAt: "2026-11-21T03:20:00.000Z"
+                onHold:
+                  summary: 모두의인증 담당자 확인 중 — 위 등록 응답(POST)의 onHold와 같은 등록입니다. 처음 등록된 채 그대로라 statusChangedAt이 registeredAt과 같습니다
+                  value:
+                    statusCode: 200
+                    memberId: b3a1c0de-0000-4000-8000-000000000003
+                    status: on_hold
+                    registeredAt: "2026-11-21T03:15:00.000Z"
+                    holdReason: COMPANY_UNAVAILABLE
+                    message: 입력하신 사업자 정보는 모두의인증 확인이 필요합니다. 사업자등록번호를 확인하시거나 고객센터로 문의해 주세요.
+                    statusChangedAt: "2026-11-21T03:15:00.000Z"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -474,34 +531,134 @@ components:
               example: "2026-11-19T06:30:00Z"
     MemberStatus:
       type: string
-      enum: [registered, review_required]
+      enum: [registered, certificate_required, on_hold]
       description: |
-        registered — 등록 요청을 받아 처리 중이거나 처리가 끝남(신청을 받을 수 있는지는 인증 신청 응답으로 알림).
-        review_required — 사업자등록증 파일이 없어 멈춤. 사업자등록증을 실어 같은 이메일·사업자등록번호로 다시 보내면 이어서 처리.
+        registered — 등록이 끝남. 인증 신청 때 이어진 회원·업체를 다시 확인해 통과하면 신청을 받고, 통과하지 못하면 409.
+        certificate_required — 사업자등록증 파일이 없어 멈춤(제1판의 review_required). 사업자등록증을 실어 같은 이메일·사업자등록번호로 다시 보내면 이어서 처리.
+        on_hold — 모두의인증 담당자 확인 중("확인 필요"). 이때만 holdReason·message가 실리고, 확인이 끝나기 전에는 신청 409 MEMBER_REVIEW_REQUIRED.
+    MemberHoldReason:
+      type: string
+      enum: [COMPANY_UNAVAILABLE, ACCOUNT_UNAVAILABLE]
+      description: |
+        status가 on_hold일 때만 있습니다. COMPANY_UNAVAILABLE(사업자 정보 확인 필요) 또는 ACCOUNT_UNAVAILABLE(이메일 계정 확인 필요).
+        둘이 함께면 ACCOUNT_UNAVAILABLE입니다.
     MemberReceipt:
+      description: |
+        등록 응답. status에 따라 두 모양 중 하나입니다. registered·certificate_required는 holdReason·message 칸이 없고,
+        on_hold는 holdReason·message가 모두 있습니다(additionalProperties: false).
+      oneOf:
+        - $ref: "#/components/schemas/MemberReceiptPlain"
+        - $ref: "#/components/schemas/MemberReceiptOnHold"
+    MemberReceiptPlain:
       type: object
+      description: status가 registered 또는 certificate_required — holdReason·message 칸이 없습니다
       required: [statusCode, memberId, status, registeredAt]
+      additionalProperties: false
       properties:
         statusCode:
           type: integer
           enum: [200]
+          description: HTTP 상태 코드. 모든 성공 응답 본문에 붙습니다
         memberId:
           type: string
           format: uuid
+          description: 등록 번호. 인증 신청에 싣습니다
         status:
-          $ref: "#/components/schemas/MemberStatus"
+          type: string
+          enum: [registered, certificate_required]
+          description: 3-4 상태 설명은 MemberStatus를 보세요
         registeredAt:
           type: string
           format: date-time
+          description: 처음 등록된 시각
+    MemberReceiptOnHold:
+      type: object
+      description: status가 on_hold — holdReason·message 필수
+      required: [statusCode, memberId, status, registeredAt, holdReason, message]
+      additionalProperties: false
+      properties:
+        statusCode:
+          type: integer
+          enum: [200]
+          description: HTTP 상태 코드. 모든 성공 응답 본문에 붙습니다
+        memberId:
+          type: string
+          format: uuid
+          description: 등록 번호. 인증 신청에 싣습니다
+        status:
+          type: string
+          enum: [on_hold]
+          description: 모두의인증 담당자 확인 중
+        registeredAt:
+          type: string
+          format: date-time
+          description: 처음 등록된 시각
+        holdReason:
+          $ref: "#/components/schemas/MemberHoldReason"
+        message:
+          type: string
+          description: holdReason별 고정 안내 문구. 고객에게 그대로 보여 드릴 수 있습니다
     MemberView:
-      allOf:
-        - $ref: "#/components/schemas/MemberReceipt"
-        - type: object
-          required: [statusChangedAt]
-          properties:
-            statusChangedAt:
-              type: string
-              format: date-time
+      description: |
+        등록 확인 응답. 등록 응답(MemberReceipt)과 같은 두 모양에 statusChangedAt이 필수로 더해집니다.
+      oneOf:
+        - $ref: "#/components/schemas/MemberViewPlain"
+        - $ref: "#/components/schemas/MemberViewOnHold"
+    MemberViewPlain:
+      type: object
+      description: status가 registered 또는 certificate_required — holdReason·message 칸이 없습니다
+      required: [statusCode, memberId, status, registeredAt, statusChangedAt]
+      additionalProperties: false
+      properties:
+        statusCode:
+          type: integer
+          enum: [200]
+          description: HTTP 상태 코드. 모든 성공 응답 본문에 붙습니다
+        memberId:
+          type: string
+          format: uuid
+          description: 등록 번호
+        status:
+          type: string
+          enum: [registered, certificate_required]
+        registeredAt:
+          type: string
+          format: date-time
+          description: 처음 등록된 시각
+        statusChangedAt:
+          type: string
+          format: date-time
+          description: 상태가 마지막으로 바뀐(또는 다시 처리된) 시각
+    MemberViewOnHold:
+      type: object
+      description: status가 on_hold — holdReason·message 필수
+      required: [statusCode, memberId, status, registeredAt, holdReason, message, statusChangedAt]
+      additionalProperties: false
+      properties:
+        statusCode:
+          type: integer
+          enum: [200]
+          description: HTTP 상태 코드. 모든 성공 응답 본문에 붙습니다
+        memberId:
+          type: string
+          format: uuid
+          description: 등록 번호
+        status:
+          type: string
+          enum: [on_hold]
+        registeredAt:
+          type: string
+          format: date-time
+          description: 처음 등록된 시각
+        holdReason:
+          $ref: "#/components/schemas/MemberHoldReason"
+        message:
+          type: string
+          description: holdReason별 고정 안내 문구
+        statusChangedAt:
+          type: string
+          format: date-time
+          description: 상태가 마지막으로 바뀐(또는 다시 처리된) 시각
     CreateApplicationData:
       type: object
       description: multipart의 data 부분에 문자열로 넣는 JSON. 정의되지 않은 칸은 무시합니다.
@@ -764,9 +921,11 @@ components:
     Conflict:
       description: |
         EXTERNAL_ORDER_CONFLICT — 같은 externalOrderId로 다른 내용이 이미 접수되어 있음.
-        MEMBER_REVIEW_REQUIRED — 이 memberId의 등록으로는 지금 신청을 접수할 수 없어 담당자 확인이 필요함.
-        같은 요청을 자동으로 다시 보내도 풀리지 않으므로 자동으로 다시 시도하지 마세요. 등록 상태가 review_required이면 사업자등록증을 실어
-        등록을 다시 보낸 뒤 신청하고, 그 밖의 경우에는 traceId와 함께 문의해 주세요.
+        MEMBER_REVIEW_REQUIRED — 이 memberId의 등록으로는 지금 신청을 접수할 수 없어 담당자 확인이 필요함
+        (등록 상태가 certificate_required·on_hold이거나, registered여도 신청 때 다시 확인에서 이어진 회원·업체를 받을 수 없는 경우).
+        같은 요청을 자동으로 다시 보내도 풀리지 않으므로 자동으로 다시 시도하지 마세요. 등록 확인(GET)으로 status를 보고,
+        certificate_required이면 사업자등록증을 실어 등록을 다시 보낸 뒤 신청하고, on_hold이면 message를 고객에게 보여 주세요.
+        그래도 같으면 memberId와 이 409 응답의 traceId를 함께 보내 문의해 주세요.
       headers:
         X-Trace-Id:
           $ref: "#/components/headers/TraceId"
