@@ -10,7 +10,7 @@
 - `api/index.html` — OpenAPI 참조 페이지(요청·응답 모양을 기능별로 봅니다).
 - `docs/moducerti-partner-api.md` — 안내서 원본.
 - `docs/openapi.yaml` — OpenAPI 3.0 원본. API 도구에 불러올 때 이 파일을 씁니다.
-- `CHANGELOG.md` — 판마다 달라진 점.
+- `CHANGELOG.md` — 버전마다 달라진 점.
 
 ## 고치는 방법
 
@@ -20,6 +20,6 @@
 node scripts/build.cjs
 ```
 
-- 판을 올릴 때는 안내서 맨 위와 8절 변경 이력, `docs/openapi.yaml`의 `info.version`, `CHANGELOG.md`를 함께 고칩니다.
+- 버전을 올릴 때는 안내서 맨 위와 8절 변경 이력, `docs/openapi.yaml`의 `info.version`, `CHANGELOG.md`를 함께 고칩니다.
 - 페이지는 바깥 CDN·글꼴·추적 스크립트를 쓰지 않습니다. 묶어 둔 라이브러리와 라이선스는 `vendor/README.md`에 있습니다.
 - API 키, 시험 환경 주소, 연동사 이름처럼 연동사마다 다른 값은 이 저장소에 적지 않습니다.
