@@ -890,7 +890,7 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     Unauthorized:
-      description: OPEN_API_KEY_REQUIRED(키 없음) 또는 OPEN_API_KEY_INVALID(잘못되었거나 폐기된 키. 업체 계정에서 발급한 키는 그 업체가 승인 상태가 아니거나 삭제된 동안에도 나옵니다)
+      description: OPEN_API_KEY_REQUIRED(키 없음) 또는 OPEN_API_KEY_INVALID(잘못되었거나 폐기된 키. 업체 계정에서 발급한 키는 그 업체가 승인 상태가 아닌 동안에도 나옵니다. 이때 키는 폐기되지 않습니다. 업체가 삭제되면 키가 폐기됩니다)
       headers:
         X-Trace-Id:
           $ref: "#/components/headers/TraceId"
